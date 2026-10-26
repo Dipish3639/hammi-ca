@@ -31,6 +31,7 @@ The `CNAME` file in this repo tells GitHub Pages which domain to serve.
 - The water look is the block of constants under "water look: tweak these" in the script:
   - `DAMPING` is how long ripples last (closer to 1 lasts longer).
   - `STEPS_PER_FRAME` is how fast waves travel.
+  - `SMOOTH` removes pixel-sized ripples so the water looks silky (keep it under 0.3; higher also shortens how long fine ripples last).
   - `REFRACT` and `SLOPE` control how much ripples bend the floor and how steep they look.
   - `SPEC_POWER` sets how tight the sun glints are.
 - The pond floor (colors and the soft light patches) is built in `buildFloor()`.

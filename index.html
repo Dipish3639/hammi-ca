@@ -149,6 +149,7 @@
   /* ---------- water look: tweak these ---------- */
   const DAMPING = reduce.matches ? 0.95 : 0.991; // closer to 1 = ripples last longer
   const STEPS_PER_FRAME = 2;                      // wave speed
+  const SMOOTH = 0.05;                            // soaks up pixel-sized ripples; 0 = off, higher = silkier (keep under 0.3)
   const CELL_PX = 3;                              // css pixels per simulation cell
   const MAX_CELLS = 90000;                        // cap for large screens
   const REFRACT = 1.5;                            // how far the floor bends under a ripple
@@ -158,8 +159,10 @@
   let W = 0, H = 0, dpr = 1;
   let sw = 0, sh = 0;                  // simulation size in cells
   let a = null, b = null;              // height buffers (current, previous)
+  let scratch = null;                  // working space for one simulation step
   let bgR = null, bgG = null, bgB = null;
   let off = null, offCtx = null, img = null;
+  let mid = null, midCtx = null;
   let raf = 0;
   let lastTouch = performance.now();
   let cursor = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // for keyboard play, in viewport px
@@ -242,9 +245,16 @@
     sh = Math.max(8, Math.ceil(H / cellPx));
     a = new Float32Array(sw * sh);
     b = new Float32Array(sw * sh);
+    scratch = new Float32Array(sw * sh);
     off = document.createElement('canvas');
     off.width = sw; off.height = sh;
     offCtx = off.getContext('2d');
+    // a middle step so the water is enlarged in two smooth stages instead of one big jump
+    mid = document.createElement('canvas');
+    mid.width = sw * 2; mid.height = sh * 2;
+    midCtx = mid.getContext('2d');
+    midCtx.imageSmoothingEnabled = true;
+    midCtx.imageSmoothingQuality = 'high';
     buildFloor();
     kick();
   }
@@ -253,17 +263,26 @@
   let energy = 0;
 
   function step() {
+    // 1) wave equation: next height from the current and previous ones, written to scratch
+    for (let y = 1; y < sh - 1; y++) {
+      let i = y * sw + 1;
+      for (let x = 1; x < sw - 1; x++, i++) {
+        scratch[i] = ((a[i - 1] + a[i + 1] + a[i - sw] + a[i + sw]) * 0.5 - b[i]) * DAMPING;
+      }
+    }
+    // 2) light smoothing of the new heights, which removes cell-sized ripples (the "pixely" look).
+    //    This is a filter on the result, so it can only lose energy and never blow up.
     let peak = 0;
     for (let y = 1; y < sh - 1; y++) {
       let i = y * sw + 1;
       for (let x = 1; x < sw - 1; x++, i++) {
-        const v = ((a[i - 1] + a[i + 1] + a[i - sw] + a[i + sw]) * 0.5 - b[i]) * DAMPING;
-        b[i] = v;
+        const v = scratch[i] + SMOOTH * ((scratch[i - 1] + scratch[i + 1] + scratch[i - sw] + scratch[i + sw]) * 0.25 - scratch[i]);
+        b[i] = v; // the previous heights are no longer needed, so reuse their buffer
         const av = v < 0 ? -v : v;
         if (av > peak) peak = av;
       }
     }
-    const t = a; a = b; b = t;
+    const t = a; a = b; b = t; // b now holds the new heights; swap so a is current
     energy = peak;
   }
 
@@ -322,7 +341,8 @@
       }
     }
     offCtx.putImageData(img, 0, 0);
-    ctx.drawImage(off, 0, 0, sw, sh, 0, 0, W, H);
+    midCtx.drawImage(off, 0, 0, sw, sh, 0, 0, sw * 2, sh * 2);
+    ctx.drawImage(mid, 0, 0, sw * 2, sh * 2, 0, 0, W, H);
   }
 
   function frame() {
@@ -468,7 +488,7 @@
     const steps = Math.max(1, Math.ceil(dist / (cellPx * 1.5)));
     for (let s = 1; s <= steps; s++) {
       const t = s / steps;
-      splat(lastX + dx * t, lastY + dy * t, amp / Math.sqrt(steps), 2.6);
+      splat(lastX + dx * t, lastY + dy * t, amp / Math.sqrt(steps), 3.8);
     }
     lastX = p.x; lastY = p.y;
     cursor.x = e.clientX; cursor.y = e.clientY;
