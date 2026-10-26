@@ -17,67 +17,59 @@
     --marigold: #F2B544;
     --fog: #E9EEF0;
     --ink: #0A1A20;
+    --blur: 9px;    /* how soft the water background is */
+    --bleed: 48px;  /* the water extends this far past the screen so the blur has no pale edge */
   }
   * { box-sizing: border-box; }
+  html { background: var(--pond); }
   body {
     margin: 0;
-    background: var(--fog);
-    color: var(--ink);
+    min-height: 100vh;
+    min-height: 100svh;
+    color: var(--fog);
     font-family: 'Newsreader', Georgia, serif;
-  }
-
-  .hero {
-    position: relative;
-    height: 100vh;
-    height: 100svh;
-    min-height: 420px;
-    background: var(--pond);
-    overflow: hidden;
-  }
-  #pond {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    /* The site fits on one screen, so touch drags should ripple the water, not scroll.
+       Remove this if the page ever grows taller than the screen. */
     touch-action: none;
   }
-  #pond:focus-visible {
-    outline: 3px solid var(--marigold);
-    outline-offset: -8px;
+
+  /* The water: one fixed layer behind everything. */
+  #pond {
+    position: fixed;
+    left: calc(var(--bleed) * -1);
+    top: calc(var(--bleed) * -1);
+    width: calc(100vw + var(--bleed) * 2);
+    height: calc(100vh + var(--bleed) * 2);
+    height: calc(100lvh + var(--bleed) * 2);
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(var(--blur));
   }
 
-  /* Text sits on a soft shadow so it stays readable over bright glints. */
+  .site {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px 24px;
+  }
+
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
   .mark {
-    position: absolute;
-    left: 24px;
-    top: 20px;
     margin: 0;
     font: 700 1.6rem/1 'Bricolage Grotesque', system-ui, sans-serif;
     font-variation-settings: 'wdth' 78;
     letter-spacing: -0.02em;
-    color: var(--fog);
-    text-shadow: 0 1px 12px rgba(6, 22, 28, 0.7);
-    pointer-events: none;
   }
-  .hint {
-    position: absolute;
-    left: 24px;
-    bottom: 24px;
-    margin: 0;
-    font: 500 1.05rem/1 'Bricolage Grotesque', system-ui, sans-serif;
-    color: var(--fog);
-    text-shadow: 0 1px 12px rgba(6, 22, 28, 0.8);
-    pointer-events: none;
-    transition: opacity 0.8s ease;
-  }
-  .hint.gone { opacity: 0; }
-
   .sound {
-    position: absolute;
-    right: 20px;
-    top: 14px;
     background: rgba(6, 22, 28, 0.35);
     border: 1px solid rgba(233, 238, 240, 0.45);
     border-radius: 999px;
@@ -89,45 +81,67 @@
   .sound:hover { border-color: var(--fog); }
   .sound:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
 
-  .about {
-    padding: clamp(56px, 10vw, 120px) 24px clamp(64px, 12vw, 140px);
+  .stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 0;
     margin-left: clamp(0px, 8vw, 120px);
   }
-  .about p { margin: 0; }
+  .stage:focus-visible { outline: 3px solid var(--marigold); outline-offset: 8px; border-radius: 4px; }
+  .stage p { margin: 0; }
   .lead {
-    max-width: 22em;
-    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+    max-width: 18em;
+    font-size: clamp(2rem, 5.2vw, 3.8rem);
     font-weight: 500;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    text-shadow: 0 2px 28px rgba(6, 22, 28, 0.55);
   }
   .small {
-    max-width: 34em;
+    max-width: 30em;
     margin-top: 1.5rem !important;
     font-size: 1.2rem;
     line-height: 1.6;
+    color: rgba(233, 238, 240, 0.86);
+    text-wrap: pretty;
+    text-shadow: 0 1px 16px rgba(6, 22, 28, 0.6);
   }
+
+  .hint {
+    margin: 0;
+    font: 500 1.05rem/1 'Bricolage Grotesque', system-ui, sans-serif;
+    text-shadow: 0 1px 12px rgba(6, 22, 28, 0.8);
+    transition: opacity 0.8s ease;
+  }
+  .hint.gone { opacity: 0; }
 </style>
 </head>
 <body>
 
-<header class="hero" id="hero">
-  <canvas id="pond" tabindex="0" aria-label="Pond. Move the pointer across the water to make ripples. Click or tap to play a note. With the keyboard, use the arrow keys to move and Enter to play."></canvas>
-  <p class="mark">hammi.ca</p>
-  <button class="sound" id="sound" type="button">Sound on</button>
-  <p class="hint" id="hint">Move across the water. Tap to play.</p>
-</header>
+<canvas id="pond" aria-hidden="true"></canvas>
 
-<main class="about">
-  <p class="lead">Every tap is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
-  <p class="small">This is the first page at hammi.ca. More will live here; for now it is a small pond.</p>
-</main>
+<div class="site">
+  <header class="bar">
+    <p class="mark">hammi.ca</p>
+    <button class="sound" id="sound" type="button">Sound on</button>
+  </header>
+
+  <main class="stage" id="stage" tabindex="0" aria-label="hammi.ca. The background is a pond: move the pointer across it to make ripples, click or tap to play a note. With the keyboard, focus this area, use the arrow keys to move and Enter to play.">
+    <p class="lead">Every tap is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
+    <p class="small">This is the first page at hammi.ca. More will live here; for now it is a small pond.</p>
+  </main>
+
+  <p class="hint" id="hint">Move across the water. Tap to play.</p>
+</div>
 
 <script>
 (() => {
   const cvs = document.getElementById('pond');
   const ctx = cvs.getContext('2d');
-  const hero = document.getElementById('hero');
+  const stage = document.getElementById('stage');
   const hint = document.getElementById('hint');
   const soundBtn = document.getElementById('sound');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -147,10 +161,8 @@
   let bgR = null, bgG = null, bgB = null;
   let off = null, offCtx = null, img = null;
   let raf = 0;
-  let dirty = 0;
   let lastTouch = performance.now();
-  let focus = { x: 0, y: 0 };
-  let focused = false;
+  let cursor = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // for keyboard play, in viewport px
 
   /* ---------- pond floor ---------- */
   function hash(ix, iy) {
@@ -234,9 +246,6 @@
     off.width = sw; off.height = sh;
     offCtx = off.getContext('2d');
     buildFloor();
-    focus.x = Math.min(Math.max(focus.x, 0), W);
-    focus.y = Math.min(Math.max(focus.y, 0), H);
-    if (focus.x === 0 && focus.y === 0) { focus.x = W / 2; focus.y = H / 2; }
     kick();
   }
 
@@ -258,7 +267,7 @@
     energy = peak;
   }
 
-  // Push the surface at (px, py) in css pixels. Positive amp raises it.
+  // Push the surface at (px, py), in canvas css pixels. Positive amp raises it.
   function splat(px, py, amp, radius) {
     const cx = (px / W) * sw, cy = (py / H) * sh;
     const r = Math.max(1.5, radius);
@@ -314,26 +323,16 @@
     }
     offCtx.putImageData(img, 0, 0);
     ctx.drawImage(off, 0, 0, sw, sh, 0, 0, W, H);
-
-    if (focused) {
-      ctx.strokeStyle = '#F2B544';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(focus.x, focus.y, 18, 0, Math.PI * 2);
-      ctx.stroke();
-    }
   }
 
   function frame() {
     raf = 0;
     for (let s = 0; s < STEPS_PER_FRAME; s++) step();
     render();
-    if (dirty > 0) dirty--;
-    if (energy > 0.02 || dirty > 0) raf = requestAnimationFrame(frame);
+    if (energy > 0.02) raf = requestAnimationFrame(frame);
   }
 
   function kick() {
-    dirty = 2;
     if (!raf && a) raf = requestAnimationFrame(frame);
   }
 
@@ -374,7 +373,7 @@
 
   const SEMITONES = [0, 2, 4, 7, 9]; // major pentatonic
 
-  // Left to right climbs the scale; nearer the top of the pond is higher.
+  // Left to right climbs the scale; nearer the top of the screen is higher.
   function freqAt(px, py) {
     const across = W > 0 ? px / W : 0;
     const up = H > 0 ? 1 - py / H : 0;
@@ -426,7 +425,7 @@
     note(f * 2, 0.1 * strength, 0.56);
   }
 
-  /* ---------- input ---------- */
+  /* ---------- input: the whole page is the pond ---------- */
   let lastX = null, lastY = null, sinceNote = 0;
 
   function touched() {
@@ -434,23 +433,28 @@
     hint.classList.add('gone');
   }
 
+  // viewport position -> position on the (slightly larger) water canvas
   function local(e) {
     const rect = cvs.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
-  cvs.addEventListener('pointerdown', e => {
+  function onButton(e) {
+    return e.target instanceof Element && e.target.closest('button, a');
+  }
+
+  document.addEventListener('pointerdown', e => {
+    if (onButton(e)) return;
     initAudio();
-    focused = false; // the ring is for keyboard users only
     const p = local(e);
     lastX = p.x; lastY = p.y; sinceNote = 0;
-    focus.x = p.x; focus.y = p.y;
+    cursor.x = e.clientX; cursor.y = e.clientY;
     splat(p.x, p.y, 70, 7);
     play(p.x, p.y, 1);
     touched();
   });
 
-  cvs.addEventListener('pointermove', e => {
+  document.addEventListener('pointermove', e => {
     const p = local(e);
     if (lastX === null) { lastX = p.x; lastY = p.y; }
     const dx = p.x - lastX, dy = p.y - lastY;
@@ -467,7 +471,7 @@
       splat(lastX + dx * t, lastY + dy * t, amp / Math.sqrt(steps), 2.6);
     }
     lastX = p.x; lastY = p.y;
-    focus.x = p.x; focus.y = p.y;
+    cursor.x = e.clientX; cursor.y = e.clientY;
 
     // dragging with a button or finger down also plays a soft note every so often
     if (e.buttons) {
@@ -480,29 +484,29 @@
     touched();
   });
 
-  cvs.addEventListener('pointerleave', () => { lastX = null; lastY = null; });
+  // forget the last position when the pointer leaves the window, so re-entry doesn't draw a streak
+  document.addEventListener('pointerout', e => {
+    if (!e.relatedTarget) { lastX = null; lastY = null; }
+  });
 
-  cvs.addEventListener('keydown', e => {
+  stage.addEventListener('keydown', e => {
     const stepPx = 40;
     const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const rect = cvs.getBoundingClientRect();
     if (moves[e.key]) {
       e.preventDefault();
-      focused = true;
-      focus.x = Math.min(Math.max(focus.x + moves[e.key][0] * stepPx, 0), W);
-      focus.y = Math.min(Math.max(focus.y + moves[e.key][1] * stepPx, 0), H);
-      splat(focus.x, focus.y, 8, 3);
+      cursor.x = Math.min(Math.max(cursor.x + moves[e.key][0] * stepPx, 0), window.innerWidth);
+      cursor.y = Math.min(Math.max(cursor.y + moves[e.key][1] * stepPx, 0), window.innerHeight);
+      splat(cursor.x - rect.left, cursor.y - rect.top, 8, 3);
       touched();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       initAudio();
-      splat(focus.x, focus.y, 70, 7);
-      play(focus.x, focus.y, 1);
+      splat(cursor.x - rect.left, cursor.y - rect.top, 70, 7);
+      play(cursor.x - rect.left, cursor.y - rect.top, 1);
       touched();
     }
   });
-
-  cvs.addEventListener('focus', () => { focused = cvs.matches(':focus-visible'); kick(); });
-  cvs.addEventListener('blur', () => { focused = false; kick(); });
 
   /* ---------- a few drops of rain when nobody is around ---------- */
   setInterval(() => {
@@ -511,7 +515,7 @@
     splat(Math.random() * W, Math.random() * H, 14 + Math.random() * 12, 3 + Math.random() * 2);
   }, 1800);
 
-  new ResizeObserver(layout).observe(hero);
+  new ResizeObserver(layout).observe(cvs);
   layout();
 
   if (!reduce.matches) {
