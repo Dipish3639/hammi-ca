@@ -22,18 +22,18 @@ Then open http://localhost:8000.
 
 The `CNAME` file in this repo tells GitHub Pages which domain to serve.
 
-## Adding or editing a project
+## Adding or editing a game
 
-Projects are the `<li class="project">` blocks inside `<main id="projects">` in `index.html`. To add one, copy a whole block and change four things: the link, the image, the name and the description. Put screenshots in `img/` (the current ones are taken from each game's `docs` folder). Keep images about 5:6 (portrait) so the list lines up; the image box crops to that shape.
+Games are the `<li class="project">` blocks inside `<main id="games">` in `index.html`. To add one, copy a whole block and change the image, name and description. If the game has a page or download, make the block's `<div class="project-link">` an `<a class="project-link" href="...">` and change the "coming soon" line to say what the link does. Put images in `img/`. Screenshots work best at about 5:6 (portrait); the image box crops to that shape. A logo on a transparent background goes in a `<span class="shot logo">` instead, which fits it inside the box without cropping.
 
-The Projects link in the top bar and the heading text are in the same file.
+The Games link in the top bar and the heading text are in the same file.
 
 ## Changing it
 
 - Colors are the five custom properties at the top of the stylesheet.
 - The scale is the `SEMITONES` array in the script. Swap in `[0, 3, 5, 7, 10]` for a minor pentatonic.
 - `--blur` at the top of the stylesheet sets how soft the water background is (set it to `0px` for sharp water).
-- The page is one screen and sets `touch-action: none` on `body` so finger drags ripple the water. If you add enough content to scroll, remove that line.
+- `body` sets `touch-action: pan-y`, so up-and-down finger drags scroll the page while taps and sideways drags still reach the water. A tap plays a note only if the finger didn't move, so scrolling stays quiet.
 - The water look is the block of constants under "water look: tweak these" in the script:
   - `DAMPING` is how long ripples last (closer to 1 lasts longer).
   - `STEPS_PER_FRAME` is how fast waves travel.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>hammi.ca</title>
-<meta name="description" content="Small games for the Nintendo 3DS, a 3D-printed MP3 player, and a pond that plays notes when you touch it.">
+<meta name="description" content="Small games for the PC, and a pond that plays notes when you touch it.">
 <meta name="theme-color" content="#0E2A33">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230E2A33'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23F2B544'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%239FD8B0' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -181,6 +181,8 @@
     box-shadow: 0 12px 40px rgba(6, 22, 28, 0.5);
   }
   .shot img, .shot svg { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .shot.logo { background: #12262d; }
+  .shot.logo img { object-fit: contain; padding: 1.1rem; }
   .project h3 {
     margin: 0;
     font: 700 clamp(1.6rem, 3.2vw, 2.3rem)/1.1 'Bricolage Grotesque', system-ui, sans-serif;
@@ -193,7 +195,7 @@
     text-underline-offset: 0.2em;
     transition: text-decoration-color 0.2s ease;
   }
-  .project-link:hover h3, .project-link:focus-visible h3 { text-decoration-color: var(--marigold); }
+  a.project-link:hover h3, a.project-link:focus-visible h3 { text-decoration-color: var(--marigold); }
   .project p {
     max-width: 32em;
     margin: 0.8rem 0 0;
@@ -212,15 +214,6 @@
     .shot { max-width: 15rem; }
   }
 
-  .foot {
-    position: relative;
-    z-index: 1;
-    padding: 0 24px clamp(40px, 7vw, 80px);
-    margin-left: clamp(0px, 8vw, 120px);
-  }
-  .foot p { margin: 0; font-size: 1.05rem; text-shadow: 0 1px 16px rgba(6, 22, 28, 0.6); }
-  .foot a { color: var(--lily); text-underline-offset: 0.2em; }
-  .foot a:focus-visible { outline: 3px solid var(--marigold); outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -231,92 +224,37 @@
   <header class="bar">
     <p class="mark">hammi.ca</p>
     <div class="bar-right">
-      <nav class="nav" aria-label="Page"><a href="#projects">Projects</a></nav>
+      <nav class="nav" aria-label="Page"><a href="#games">Games</a></nav>
       <button class="sound" id="sound" type="button">Sound on</button>
     </div>
   </header>
 
   <section class="stage" id="stage" tabindex="0" aria-label="hammi.ca. The background is a pond: move the pointer across it to make ripples, click or tap to play a note. With the keyboard, focus this area, use the arrow keys to move and Enter to play.">
-    <p class="lead">Small games and gadgets, and a pond that plays a note when you touch it.</p>
+    <p class="lead">Small games for the PC, and a pond that plays a note when you touch it.</p>
     <p class="small">Every tap is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
   </section>
 
   <p class="hint" id="hint">Move across the water. Tap to play.</p>
 </div>
 
-<main class="work" id="projects">
-  <h2>Projects</h2>
-  <p class="work-intro">Four games for the Nintendo 3DS and a 3D-printed MP3 player.</p>
+<main class="work" id="games">
+  <h2>Games</h2>
+  <p class="work-intro">Games you can play on a PC.</p>
 
   <ul class="projects">
     <li class="project">
-      <a class="project-link" href="https://github.com/Dipish3639/chess-3ds">
-        <span class="shot"><img src="img/chess-3ds.png" width="400" height="480" loading="lazy" alt="Chess 3DS: the move list and player cards on the top screen, the board on the touch screen."></span>
+      <div class="project-link">
+        <span class="shot logo"><img src="img/house-edge.png" width="768" height="512" alt="House Edge logo: four aces fanned above the title, with red poker chips and dice."></span>
         <div class="words">
-          <h3>Chess 3DS</h3>
-          <p>Chess that uses both screens of the Nintendo 3DS. Play pass and play, against the CPU on three difficulty levels, or against a friend over local wireless with no internet needed.</p>
-          <p class="go">View on GitHub</p>
+          <h3>House Edge</h3>
+          <p>A small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Velora account.</p>
+          <p class="go">Windows download coming soon</p>
         </div>
-      </a>
-    </li>
-    <li class="project">
-      <a class="project-link" href="https://github.com/Dipish3639/farming-game-3ds">
-        <span class="shot"><img src="img/tiny-harvest.png" width="400" height="480" loading="lazy" alt="Tiny Harvest: a pixel-art farm with a cottage and windmill above, and a seed shop below."></span>
-        <div class="words">
-          <h3>Tiny Harvest</h3>
-          <p>A cozy pixel-art farming game. Walk between eight planter beds, plant, water and harvest with one button, and save up coins to unlock new seeds, from quick turnips to towering sunflowers.</p>
-          <p class="go">View on GitHub</p>
-        </div>
-      </a>
-    </li>
-    <li class="project">
-      <a class="project-link" href="https://github.com/Dipish3639/Bouldering-3ds">
-        <span class="shot"><img src="img/boulder-3ds.png" width="400" height="480" loading="lazy" alt="Boulder 3DS: a climber reaching for red holds on a grey wall, with a grip meter on the left."></span>
-        <div class="words">
-          <h3>Boulder 3DS</h3>
-          <p>A bouldering game where you set your own routes by tapping holds onto a wall, or generate one at the grade you want, then climb it before your grip runs out. A built-in solver grades every route and shows the best way up.</p>
-          <p class="go">View on GitHub</p>
-        </div>
-      </a>
-    </li>
-    <li class="project">
-      <a class="project-link" href="https://github.com/Dipish3639/Tetris3ds">
-        <span class="shot"><img src="img/tetris-3ds.png" width="800" height="980" loading="lazy" alt="Tetris 3DS in versus mode: a board with a quad and combo on the top screen, the rival's board and score on the bottom."></span>
-        <div class="words">
-          <h3>Tetris 3DS</h3>
-          <p>Tetris with a two-console wireless versus mode, where clearing lines sends garbage rows to the other player. It also has marathon and zen modes, and a chiptune soundtrack that the console synthesises itself.</p>
-          <p class="go">View on GitHub</p>
-        </div>
-      </a>
-    </li>
-    <li class="project">
-      <a class="project-link" href="https://github.com/Dipish3639/clip-mp3">
-        <span class="shot">
-          <svg viewBox="0 0 400 480" role="img" aria-label="Drawing of clip.mp3: a light grey rounded case with a small screen above a round dial.">
-            <rect width="400" height="480" fill="#12262d"/>
-            <rect x="100" y="96" width="200" height="277" rx="14" fill="#d9dedf"/>
-            <rect x="124" y="122" width="152" height="84" rx="6" fill="#0b1a1f"/>
-            <rect x="140" y="140" width="84" height="8" rx="2" fill="#9FD8B0"/>
-            <rect x="140" y="162" width="120" height="4" rx="2" fill="#2a4750"/>
-            <rect x="140" y="162" width="50" height="4" rx="2" fill="#F2B544"/>
-            <circle cx="200" cy="294" r="50" fill="#aab3b6"/>
-            <circle cx="200" cy="294" r="42" fill="#c4cccd"/>
-            <rect x="197" y="258" width="6" height="16" rx="3" fill="#F2B544"/>
-          </svg>
-        </span>
-        <div class="words">
-          <h3>clip.mp3</h3>
-          <p>A 3D-printed MP3 player in the spirit of Teenage Engineering gear, built around an ESP32-S3 with a small OLED screen, a rotary dial and an SD card slot. It comes with a parametric OpenSCAD case, printable STL files and the firmware.</p>
-          <p class="go">View on GitHub</p>
-        </div>
-      </a>
+      </div>
     </li>
   </ul>
 </main>
 
-<footer class="foot">
-  <p>Everything is on <a href="https://github.com/Dipish3639">GitHub</a>.</p>
-</footer>
 
 <script>
 (() => {
