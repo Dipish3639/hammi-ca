@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>hammi.ca</title>
-<meta name="description" content="A pond that plays back what you tap.">
+<meta name="description" content="A pond that ripples when you move across it and plays a note when you tap.">
 <meta name="theme-color" content="#0E2A33">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230E2A33'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23F2B544'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%239FD8B0' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,13 +41,14 @@
     height: 100%;
     display: block;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;
   }
   #pond:focus-visible {
     outline: 3px solid var(--marigold);
     outline-offset: -8px;
   }
 
+  /* Text sits on a soft shadow so it stays readable over bright glints. */
   .mark {
     position: absolute;
     left: 24px;
@@ -57,6 +58,7 @@
     font-variation-settings: 'wdth' 78;
     letter-spacing: -0.02em;
     color: var(--fog);
+    text-shadow: 0 1px 12px rgba(6, 22, 28, 0.7);
     pointer-events: none;
   }
   .hint {
@@ -65,7 +67,8 @@
     bottom: 24px;
     margin: 0;
     font: 500 1.05rem/1 'Bricolage Grotesque', system-ui, sans-serif;
-    color: var(--lily);
+    color: var(--fog);
+    text-shadow: 0 1px 12px rgba(6, 22, 28, 0.8);
     pointer-events: none;
     transition: opacity 0.8s ease;
   }
@@ -75,15 +78,15 @@
     position: absolute;
     right: 20px;
     top: 14px;
-    background: none;
-    border: 1px solid rgba(159, 216, 176, 0.4);
+    background: rgba(6, 22, 28, 0.35);
+    border: 1px solid rgba(233, 238, 240, 0.45);
     border-radius: 999px;
     padding: 0.45rem 0.95rem;
-    color: var(--lily);
+    color: var(--fog);
     font: 500 0.9rem/1 'Bricolage Grotesque', system-ui, sans-serif;
     cursor: pointer;
   }
-  .sound:hover { border-color: var(--lily); }
+  .sound:hover { border-color: var(--fog); }
   .sound:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
 
   .about {
@@ -108,64 +111,230 @@
 </head>
 <body>
 
-<header class="hero">
-  <canvas id="pond" tabindex="0" aria-label="Tone pond. Tap or click to drop a note. With the keyboard, use the arrow keys to move and Enter to play."></canvas>
+<header class="hero" id="hero">
+  <canvas id="pond" tabindex="0" aria-label="Pond. Move the pointer across the water to make ripples. Click or tap to play a note. With the keyboard, use the arrow keys to move and Enter to play."></canvas>
   <p class="mark">hammi.ca</p>
   <button class="sound" id="sound" type="button">Sound on</button>
-  <p class="hint" id="hint">Tap the pond.</p>
+  <p class="hint" id="hint">Move across the water. Tap to play.</p>
 </header>
 
 <main class="about">
-  <p class="lead">Every dot is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
-  <p class="small">This is the first page at hammi.ca. More will live here; for now it is a small instrument made of circles.</p>
+  <p class="lead">Every tap is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
+  <p class="small">This is the first page at hammi.ca. More will live here; for now it is a small pond.</p>
 </main>
 
 <script>
 (() => {
   const cvs = document.getElementById('pond');
   const ctx = cvs.getContext('2d');
-  const hero = document.querySelector('.hero');
+  const hero = document.getElementById('hero');
   const hint = document.getElementById('hint');
   const soundBtn = document.getElementById('sound');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  const LILY = [159, 216, 176];
-  const MARIGOLD = [242, 181, 68];
-  const RIPPLE_MS = 2200;
-  const RIPPLE_SPEED = 0.28; // px per ms
+  /* ---------- water look: tweak these ---------- */
+  const DAMPING = reduce.matches ? 0.95 : 0.991; // closer to 1 = ripples last longer
+  const STEPS_PER_FRAME = 2;                      // wave speed
+  const CELL_PX = 3;                              // css pixels per simulation cell
+  const MAX_CELLS = 90000;                        // cap for large screens
+  const REFRACT = 1.5;                            // how far the floor bends under a ripple
+  const SLOPE = 0.09;                             // how steep ripples look
+  const SPEC_POWER = 110;                         // sun glint tightness
 
   let W = 0, H = 0, dpr = 1;
-  let cols = 0, rows = 0, cell = 0, ox = 0, oy = 0;
-  let ripples = [];
-  let focus = { c: 0, r: 0 };
-  let focused = false;
-  let lastCell = '';
-  let lastTouch = performance.now();
+  let sw = 0, sh = 0;                  // simulation size in cells
+  let a = null, b = null;              // height buffers (current, previous)
+  let bgR = null, bgG = null, bgB = null;
+  let off = null, offCtx = null, img = null;
   let raf = 0;
+  let dirty = 0;
+  let lastTouch = performance.now();
+  let focus = { x: 0, y: 0 };
+  let focused = false;
+
+  /* ---------- pond floor ---------- */
+  function hash(ix, iy) {
+    let n = (ix * 374761393 + iy * 668265263) | 0;
+    n = (n ^ (n >>> 13)) * 1274126177 | 0;
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  }
+  function vnoise(x, y) {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    const fx = x - ix, fy = y - iy;
+    const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+    const v00 = hash(ix, iy), v10 = hash(ix + 1, iy);
+    const v01 = hash(ix, iy + 1), v11 = hash(ix + 1, iy + 1);
+    return (v00 + (v10 - v00) * ux) + ((v01 + (v11 - v01) * ux) - (v00 + (v10 - v00) * ux)) * uy;
+  }
+
+  function buildFloor() {
+    bgR = new Float32Array(sw * sh);
+    bgG = new Float32Array(sw * sh);
+    bgB = new Float32Array(sw * sh);
+    const k = 0.03;
+    for (let y = 0; y < sh; y++) {
+      for (let x = 0; x < sw; x++) {
+        const i = y * sw + x;
+        // murky green-teal base, lighter toward the top like sky light on the surface
+        const depth = y / sh;
+        const murk = vnoise(x * k * 0.5, y * k * 0.5) * 0.65 + vnoise(x * k * 1.3 + 40, y * k * 1.3 + 17) * 0.35;
+        let r = 12 + 10 * (1 - depth) + 12 * murk;
+        let g = 52 + 22 * (1 - depth) + 30 * murk;
+        let bl = 58 + 22 * (1 - depth) + 24 * murk;
+        // faint, soft light patches on the pond bed
+        const w1 = vnoise(x * k * 1.1, y * k * 1.1);
+        const w2 = vnoise(x * k * 1.1 + w1 * 2.4 + 9.1, y * k * 1.1 + w1 * 2.4 + 4.7);
+        const vein = Math.pow(1 - Math.abs(2 * w2 - 1), 3);
+        r += vein * 8; g += vein * 22; bl += vein * 18;
+        // darker toward the edges
+        const dx = (x / sw - 0.5) * 2, dy = (y / sh - 0.5) * 2;
+        const vig = 1 - 0.42 * Math.min(1, (dx * dx + dy * dy) * 0.55);
+        bgR[i] = r * vig; bgG[i] = g * vig; bgB[i] = bl * vig;
+      }
+    }
+    // two box-blur passes take the stair-step edges off the noise
+    for (let pass = 0; pass < 2; pass++) {
+      for (const ch of [bgR, bgG, bgB]) {
+        const copy = ch.slice();
+        for (let y = 1; y < sh - 1; y++) {
+          for (let x = 1; x < sw - 1; x++) {
+            const i = y * sw + x;
+            ch[i] = (copy[i] * 4 + copy[i - 1] + copy[i + 1] + copy[i - sw] + copy[i + sw]) / 8;
+          }
+        }
+      }
+    }
+    img = offCtx.createImageData(sw, sh);
+    const d = img.data;
+    for (let i = 0; i < sw * sh; i++) {
+      d[i * 4] = bgR[i]; d[i * 4 + 1] = bgG[i]; d[i * 4 + 2] = bgB[i]; d[i * 4 + 3] = 255;
+    }
+  }
 
   /* ---------- layout ---------- */
   function layout() {
     const rect = cvs.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = rect.width;
     H = rect.height;
     cvs.width = Math.round(W * dpr);
     cvs.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-    // Keep a clear band above and below the dots for the wordmark, button and hint.
-    const usableH = Math.max(H - 112, 160);
-    const target = W < 600 ? 48 : 60;
-    cols = Math.max(4, Math.floor(W / target));
-    rows = Math.max(4, Math.floor(usableH / target));
-    cell = Math.min(W / cols, usableH / rows);
-    ox = (W - cell * cols) / 2;
-    oy = (H - cell * rows) / 2;
-
-    focus.c = Math.min(focus.c, cols - 1);
-    focus.r = Math.min(focus.r, rows - 1);
-    ripples = [];
+    let cellPx = CELL_PX;
+    while ((W / cellPx) * (H / cellPx) > MAX_CELLS) cellPx += 0.5;
+    sw = Math.max(8, Math.ceil(W / cellPx));
+    sh = Math.max(8, Math.ceil(H / cellPx));
+    a = new Float32Array(sw * sh);
+    b = new Float32Array(sw * sh);
+    off = document.createElement('canvas');
+    off.width = sw; off.height = sh;
+    offCtx = off.getContext('2d');
+    buildFloor();
+    focus.x = Math.min(Math.max(focus.x, 0), W);
+    focus.y = Math.min(Math.max(focus.y, 0), H);
+    if (focus.x === 0 && focus.y === 0) { focus.x = W / 2; focus.y = H / 2; }
     kick();
+  }
+
+  /* ---------- wave simulation ---------- */
+  let energy = 0;
+
+  function step() {
+    let peak = 0;
+    for (let y = 1; y < sh - 1; y++) {
+      let i = y * sw + 1;
+      for (let x = 1; x < sw - 1; x++, i++) {
+        const v = ((a[i - 1] + a[i + 1] + a[i - sw] + a[i + sw]) * 0.5 - b[i]) * DAMPING;
+        b[i] = v;
+        const av = v < 0 ? -v : v;
+        if (av > peak) peak = av;
+      }
+    }
+    const t = a; a = b; b = t;
+    energy = peak;
+  }
+
+  // Push the surface at (px, py) in css pixels. Positive amp raises it.
+  function splat(px, py, amp, radius) {
+    const cx = (px / W) * sw, cy = (py / H) * sh;
+    const r = Math.max(1.5, radius);
+    const x0 = Math.max(1, Math.floor(cx - r)), x1 = Math.min(sw - 2, Math.ceil(cx + r));
+    const y0 = Math.max(1, Math.floor(cy - r)), y1 = Math.min(sh - 2, Math.ceil(cy + r));
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const d = Math.hypot(x - cx, y - cy) / r;
+        if (d < 1) a[y * sw + x] += amp * 0.5 * (1 + Math.cos(Math.PI * d));
+      }
+    }
+    kick();
+  }
+
+  /* ---------- shading ---------- */
+  function render() {
+    const d = img.data;
+    for (let y = 1; y < sh - 1; y++) {
+      let i = y * sw + 1;
+      for (let x = 1; x < sw - 1; x++, i++) {
+        const hx = a[i - 1] - a[i + 1];
+        const hy = a[i - sw] - a[i + sw];
+
+        // refraction: the floor is sampled slightly off to the side of each point
+        let sx = (x + hx * REFRACT) | 0;
+        let sy = (y + hy * REFRACT) | 0;
+        if (sx < 0) sx = 0; else if (sx > sw - 1) sx = sw - 1;
+        if (sy < 0) sy = 0; else if (sy > sh - 1) sy = sh - 1;
+        const bi = sy * sw + sx;
+
+        const nx = hx * SLOPE, ny = hy * SLOPE;
+        const inv = 1 / Math.sqrt(1 + nx * nx + ny * ny);
+
+        // soft light from the upper left
+        let shade = 1 - (nx * 0.6 + ny * 0.8) * inv * 0.7;
+        if (shade < 0.55) shade = 0.55; else if (shade > 1.7) shade = 1.7;
+
+        // sun glint (Blinn-Phong, light and viewer fixed)
+        const dh = (-0.185 * nx - 0.264 * ny + 0.947) * inv;
+        const spec = dh > 0.93 ? Math.pow(dh, SPEC_POWER) * 1.5 : 0;
+
+        // sky reflection grows with slope
+        const sky = (1 - inv) * 1.5;
+
+        const o = i * 4;
+        let r = bgR[bi] * shade + spec * 255 + sky * 150;
+        let g = bgG[bi] * shade + spec * 255 + sky * 205;
+        let bl = bgB[bi] * shade + spec * 250 + sky * 220;
+        d[o] = r > 255 ? 255 : r;
+        d[o + 1] = g > 255 ? 255 : g;
+        d[o + 2] = bl > 255 ? 255 : bl;
+      }
+    }
+    offCtx.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, sw, sh, 0, 0, W, H);
+
+    if (focused) {
+      ctx.strokeStyle = '#F2B544';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(focus.x, focus.y, 18, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function frame() {
+    raf = 0;
+    for (let s = 0; s < STEPS_PER_FRAME; s++) step();
+    render();
+    if (dirty > 0) dirty--;
+    if (energy > 0.02 || dirty > 0) raf = requestAnimationFrame(frame);
+  }
+
+  function kick() {
+    dirty = 2;
+    if (!raf && a) raf = requestAnimationFrame(frame);
   }
 
   /* ---------- audio ---------- */
@@ -205,10 +374,11 @@
 
   const SEMITONES = [0, 2, 4, 7, 9]; // major pentatonic
 
-  function freqAt(c, r) {
-    const across = cols > 1 ? c / (cols - 1) : 0;
-    const up = rows > 1 ? (rows - 1 - r) / (rows - 1) : 0;
-    const idx = Math.round(across * 10 + up * 6);
+  // Left to right climbs the scale; nearer the top of the pond is higher.
+  function freqAt(px, py) {
+    const across = W > 0 ? px / W : 0;
+    const up = H > 0 ? 1 - py / H : 0;
+    const idx = Math.round(Math.min(Math.max(across, 0), 1) * 10 + Math.min(Math.max(up, 0), 1) * 6);
     const oct = Math.floor(idx / 5);
     const semis = SEMITONES[idx % 5] + 12 * oct;
     return 130.81 * Math.pow(2, semis / 12);
@@ -249,132 +419,103 @@
     if (out) out.gain.value = muted ? 0 : 0.4;
   });
 
-  /* ---------- ripples ---------- */
-  function drop(c, r, audible) {
-    ripples.push({
-      x: ox + (c + 0.5) * cell,
-      y: oy + (r + 0.5) * cell,
-      t: performance.now()
-    });
-    if (ripples.length > 10) ripples.shift();
-    if (audible) {
-      const f = freqAt(c, r);
-      note(f, 0.5, 0);
-      note(f * 1.5, 0.18, 0.28);
-      note(f * 2, 0.1, 0.56);
-    }
-    kick();
+  function play(px, py, strength) {
+    const f = freqAt(px, py);
+    note(f, 0.5 * strength, 0);
+    note(f * 1.5, 0.18 * strength, 0.28);
+    note(f * 2, 0.1 * strength, 0.56);
   }
+
+  /* ---------- input ---------- */
+  let lastX = null, lastY = null, sinceNote = 0;
 
   function touched() {
     lastTouch = performance.now();
     hint.classList.add('gone');
   }
 
-  /* ---------- drawing ---------- */
-  function frame(now) {
-    raf = 0;
-    ctx.clearRect(0, 0, W, H);
-    ripples = ripples.filter(p => now - p.t < RIPPLE_MS);
-    const band = cell * 1.1;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const x = ox + (c + 0.5) * cell;
-        const y = oy + (r + 0.5) * cell;
-        let glow = 0;
-        for (const p of ripples) {
-          const age = now - p.t;
-          const radius = age * RIPPLE_SPEED;
-          const k = (Math.hypot(x - p.x, y - p.y) - radius) / band;
-          glow = Math.max(glow, Math.exp(-k * k) * (1 - age / RIPPLE_MS));
-        }
-        const R = LILY[0] + (MARIGOLD[0] - LILY[0]) * glow;
-        const G = LILY[1] + (MARIGOLD[1] - LILY[1]) * glow;
-        const B = LILY[2] + (MARIGOLD[2] - LILY[2]) * glow;
-        ctx.fillStyle = `rgba(${R | 0},${G | 0},${B | 0},${0.28 + 0.72 * glow})`;
-        ctx.beginPath();
-        ctx.arc(x, y, cell * (0.07 + 0.2 * glow), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    if (focused) {
-      ctx.strokeStyle = `rgb(${MARIGOLD})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(ox + (focus.c + 0.5) * cell, oy + (focus.r + 0.5) * cell, cell * 0.38, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    if (ripples.length) raf = requestAnimationFrame(frame);
-  }
-
-  function kick() {
-    if (!raf) raf = requestAnimationFrame(frame);
-  }
-
-  /* ---------- input ---------- */
-  function cellFromEvent(e) {
+  function local(e) {
     const rect = cvs.getBoundingClientRect();
-    const c = Math.floor((e.clientX - rect.left - ox) / cell);
-    const r = Math.floor((e.clientY - rect.top - oy) / cell);
-    return {
-      c: Math.min(Math.max(c, 0), cols - 1),
-      r: Math.min(Math.max(r, 0), rows - 1)
-    };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
   cvs.addEventListener('pointerdown', e => {
     initAudio();
-    const { c, r } = cellFromEvent(e);
-    lastCell = c + ',' + r;
-    focus = { c, r };
-    drop(c, r, true);
+    focused = false; // the ring is for keyboard users only
+    const p = local(e);
+    lastX = p.x; lastY = p.y; sinceNote = 0;
+    focus.x = p.x; focus.y = p.y;
+    splat(p.x, p.y, 70, 7);
+    play(p.x, p.y, 1);
     touched();
   });
 
   cvs.addEventListener('pointermove', e => {
-    if (!e.buttons) return;
-    const { c, r } = cellFromEvent(e);
-    const key = c + ',' + r;
-    if (key === lastCell) return;
-    lastCell = key;
-    focus = { c, r };
-    drop(c, r, true);
+    const p = local(e);
+    if (lastX === null) { lastX = p.x; lastY = p.y; }
+    const dx = p.x - lastX, dy = p.y - lastY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return;
+
+    // lay down a wake along the path, stronger the faster the pointer moves
+    const cellPx = W / sw;
+    const speed = Math.min(dist / cellPx, 24);
+    const amp = 2.2 + speed * 0.55;
+    const steps = Math.max(1, Math.ceil(dist / (cellPx * 1.5)));
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      splat(lastX + dx * t, lastY + dy * t, amp / Math.sqrt(steps), 2.6);
+    }
+    lastX = p.x; lastY = p.y;
+    focus.x = p.x; focus.y = p.y;
+
+    // dragging with a button or finger down also plays a soft note every so often
+    if (e.buttons) {
+      sinceNote += dist;
+      if (sinceNote > 90) {
+        sinceNote = 0;
+        play(p.x, p.y, 0.6);
+      }
+    }
     touched();
   });
 
+  cvs.addEventListener('pointerleave', () => { lastX = null; lastY = null; });
+
   cvs.addEventListener('keydown', e => {
+    const stepPx = 40;
     const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (moves[e.key]) {
       e.preventDefault();
-      focus.c = Math.min(Math.max(focus.c + moves[e.key][0], 0), cols - 1);
-      focus.r = Math.min(Math.max(focus.r + moves[e.key][1], 0), rows - 1);
-      kick();
+      focused = true;
+      focus.x = Math.min(Math.max(focus.x + moves[e.key][0] * stepPx, 0), W);
+      focus.y = Math.min(Math.max(focus.y + moves[e.key][1] * stepPx, 0), H);
+      splat(focus.x, focus.y, 8, 3);
+      touched();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       initAudio();
-      drop(focus.c, focus.r, true);
+      splat(focus.x, focus.y, 70, 7);
+      play(focus.x, focus.y, 1);
       touched();
     }
   });
 
-  cvs.addEventListener('focus', () => { focused = true; kick(); });
+  cvs.addEventListener('focus', () => { focused = cvs.matches(':focus-visible'); kick(); });
   cvs.addEventListener('blur', () => { focused = false; kick(); });
 
-  /* ---------- the pond keeps going when nobody is playing ---------- */
+  /* ---------- a few drops of rain when nobody is around ---------- */
   setInterval(() => {
-    if (reduce.matches || document.hidden) return;
+    if (reduce.matches || document.hidden || !a) return;
     if (performance.now() - lastTouch < 3500) return;
-    drop(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), false);
-  }, 2600);
+    splat(Math.random() * W, Math.random() * H, 14 + Math.random() * 12, 3 + Math.random() * 2);
+  }, 1800);
 
   new ResizeObserver(layout).observe(hero);
   layout();
 
   if (!reduce.matches) {
-    setTimeout(() => drop(Math.floor(cols / 2), Math.floor(rows / 2), false), 500);
+    setTimeout(() => { if (a) splat(W * 0.5, H * 0.5, 40, 6); }, 500);
   }
 })();
 </script>

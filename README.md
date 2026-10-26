@@ -1,8 +1,8 @@
 # hammi.ca
 
-The front door at hammi.ca: a pond of dots that ripples and chimes where you tap. Every dot is a note from a major pentatonic scale, so any combination sounds fine.
+The front door at hammi.ca: a pond that ripples behind your pointer and chimes where you tap. Notes come from a major pentatonic scale (left to right climbs the scale, higher up the pond is higher pitched), so any combination sounds fine.
 
-It is one static file (`index.html`) with no build step and no dependencies besides two Google Fonts.
+The water is a real wave simulation: each frame solves the 2D wave equation on a small grid, then shades it with refraction of the pond floor, a sun glint and a sky reflection. It is one static file (`index.html`) with no build step and no dependencies besides two Google Fonts.
 
 ## Run it locally
 
@@ -26,4 +26,9 @@ The `CNAME` file in this repo tells GitHub Pages which domain to serve.
 
 - Colors are the five custom properties at the top of the stylesheet.
 - The scale is the `SEMITONES` array in the script. Swap in `[0, 3, 5, 7, 10]` for a minor pentatonic.
-- Dot size is the `target` value in `layout()`.
+- The water look is the block of constants under "water look: tweak these" in the script:
+  - `DAMPING` is how long ripples last (closer to 1 lasts longer).
+  - `STEPS_PER_FRAME` is how fast waves travel.
+  - `REFRACT` and `SLOPE` control how much ripples bend the floor and how steep they look.
+  - `SPEC_POWER` sets how tight the sun glints are.
+- The pond floor (colors and the soft light patches) is built in `buildFloor()`.
