@@ -22,6 +22,12 @@ Then open http://localhost:8000.
 
 The `CNAME` file in this repo tells GitHub Pages which domain to serve.
 
+## Adding or editing a project
+
+Projects are the `<li class="project">` blocks inside `<main id="projects">` in `index.html`. To add one, copy a whole block and change four things: the link, the image, the name and the description. Put screenshots in `img/` (the current ones are taken from each game's `docs` folder). Keep images about 5:6 (portrait) so the list lines up; the image box crops to that shape.
+
+The Projects link in the top bar and the heading text are in the same file.
+
 ## Changing it
 
 - Colors are the five custom properties at the top of the stylesheet.
