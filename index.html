@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hammi.ca</title>
+<meta name="description" content="A pond that plays back what you tap.">
+<meta name="theme-color" content="#0E2A33">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230E2A33'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23F2B544'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%239FD8B0' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pond: #0E2A33;
+    --lily: #9FD8B0;
+    --marigold: #F2B544;
+    --fog: #E9EEF0;
+    --ink: #0A1A20;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fog);
+    color: var(--ink);
+    font-family: 'Newsreader', Georgia, serif;
+  }
+
+  .hero {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 420px;
+    background: var(--pond);
+    overflow: hidden;
+  }
+  #pond {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #pond:focus-visible {
+    outline: 3px solid var(--marigold);
+    outline-offset: -8px;
+  }
+
+  .mark {
+    position: absolute;
+    left: 24px;
+    top: 20px;
+    margin: 0;
+    font: 700 1.6rem/1 'Bricolage Grotesque', system-ui, sans-serif;
+    font-variation-settings: 'wdth' 78;
+    letter-spacing: -0.02em;
+    color: var(--fog);
+    pointer-events: none;
+  }
+  .hint {
+    position: absolute;
+    left: 24px;
+    bottom: 24px;
+    margin: 0;
+    font: 500 1.05rem/1 'Bricolage Grotesque', system-ui, sans-serif;
+    color: var(--lily);
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .hint.gone { opacity: 0; }
+
+  .sound {
+    position: absolute;
+    right: 20px;
+    top: 14px;
+    background: none;
+    border: 1px solid rgba(159, 216, 176, 0.4);
+    border-radius: 999px;
+    padding: 0.45rem 0.95rem;
+    color: var(--lily);
+    font: 500 0.9rem/1 'Bricolage Grotesque', system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .sound:hover { border-color: var(--lily); }
+  .sound:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+
+  .about {
+    padding: clamp(56px, 10vw, 120px) 24px clamp(64px, 12vw, 140px);
+    margin-left: clamp(0px, 8vw, 120px);
+  }
+  .about p { margin: 0; }
+  .lead {
+    max-width: 22em;
+    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .small {
+    max-width: 34em;
+    margin-top: 1.5rem !important;
+    font-size: 1.2rem;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="pond" tabindex="0" aria-label="Tone pond. Tap or click to drop a note. With the keyboard, use the arrow keys to move and Enter to play."></canvas>
+  <p class="mark">hammi.ca</p>
+  <button class="sound" id="sound" type="button">Sound on</button>
+  <p class="hint" id="hint">Tap the pond.</p>
+</header>
+
+<main class="about">
+  <p class="lead">Every dot is a note from the same pentatonic scale, so nothing you play can sound wrong.</p>
+  <p class="small">This is the first page at hammi.ca. More will live here; for now it is a small instrument made of circles.</p>
+</main>
+
+<script>
+(() => {
+  const cvs = document.getElementById('pond');
+  const ctx = cvs.getContext('2d');
+  const hero = document.querySelector('.hero');
+  const hint = document.getElementById('hint');
+  const soundBtn = document.getElementById('sound');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const LILY = [159, 216, 176];
+  const MARIGOLD = [242, 181, 68];
+  const RIPPLE_MS = 2200;
+  const RIPPLE_SPEED = 0.28; // px per ms
+
+  let W = 0, H = 0, dpr = 1;
+  let cols = 0, rows = 0, cell = 0, ox = 0, oy = 0;
+  let ripples = [];
+  let focus = { c: 0, r: 0 };
+  let focused = false;
+  let lastCell = '';
+  let lastTouch = performance.now();
+  let raf = 0;
+
+  /* ---------- layout ---------- */
+  function layout() {
+    const rect = cvs.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width;
+    H = rect.height;
+    cvs.width = Math.round(W * dpr);
+    cvs.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Keep a clear band above and below the dots for the wordmark, button and hint.
+    const usableH = Math.max(H - 112, 160);
+    const target = W < 600 ? 48 : 60;
+    cols = Math.max(4, Math.floor(W / target));
+    rows = Math.max(4, Math.floor(usableH / target));
+    cell = Math.min(W / cols, usableH / rows);
+    ox = (W - cell * cols) / 2;
+    oy = (H - cell * rows) / 2;
+
+    focus.c = Math.min(focus.c, cols - 1);
+    focus.r = Math.min(focus.r, rows - 1);
+    ripples = [];
+    kick();
+  }
+
+  /* ---------- audio ---------- */
+  let actx = null, bus = null, out = null, muted = false;
+
+  function initAudio() {
+    if (actx) {
+      if (actx.state === 'suspended') actx.resume();
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx = new AC();
+    bus = actx.createGain();
+    out = actx.createGain();
+    out.gain.value = muted ? 0 : 0.4;
+
+    const delay = actx.createDelay(1);
+    delay.delayTime.value = 0.31;
+    const lowpass = actx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 2200;
+    const feedback = actx.createGain();
+    feedback.gain.value = 0.38;
+    const wet = actx.createGain();
+    wet.gain.value = 0.45;
+
+    bus.connect(out);
+    bus.connect(delay);
+    delay.connect(lowpass);
+    lowpass.connect(feedback);
+    feedback.connect(delay);
+    lowpass.connect(wet);
+    wet.connect(out);
+    out.connect(actx.destination);
+  }
+
+  const SEMITONES = [0, 2, 4, 7, 9]; // major pentatonic
+
+  function freqAt(c, r) {
+    const across = cols > 1 ? c / (cols - 1) : 0;
+    const up = rows > 1 ? (rows - 1 - r) / (rows - 1) : 0;
+    const idx = Math.round(across * 10 + up * 6);
+    const oct = Math.floor(idx / 5);
+    const semis = SEMITONES[idx % 5] + 12 * oct;
+    return 130.81 * Math.pow(2, semis / 12);
+  }
+
+  function note(freq, gain, delaySec) {
+    if (!actx || muted) return;
+    const t = actx.currentTime + delaySec;
+    const body = actx.createOscillator();
+    const shimmer = actx.createOscillator();
+    const env = actx.createGain();
+    const shimmerGain = actx.createGain();
+
+    body.type = 'sine';
+    body.frequency.value = freq;
+    shimmer.type = 'triangle';
+    shimmer.frequency.value = freq * 2;
+    shimmerGain.gain.value = 0.18;
+
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+
+    body.connect(env);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(env);
+    env.connect(bus);
+
+    body.start(t);
+    shimmer.start(t);
+    body.stop(t + 1.7);
+    shimmer.stop(t + 1.7);
+  }
+
+  soundBtn.addEventListener('click', () => {
+    muted = !muted;
+    soundBtn.textContent = muted ? 'Sound off' : 'Sound on';
+    if (out) out.gain.value = muted ? 0 : 0.4;
+  });
+
+  /* ---------- ripples ---------- */
+  function drop(c, r, audible) {
+    ripples.push({
+      x: ox + (c + 0.5) * cell,
+      y: oy + (r + 0.5) * cell,
+      t: performance.now()
+    });
+    if (ripples.length > 10) ripples.shift();
+    if (audible) {
+      const f = freqAt(c, r);
+      note(f, 0.5, 0);
+      note(f * 1.5, 0.18, 0.28);
+      note(f * 2, 0.1, 0.56);
+    }
+    kick();
+  }
+
+  function touched() {
+    lastTouch = performance.now();
+    hint.classList.add('gone');
+  }
+
+  /* ---------- drawing ---------- */
+  function frame(now) {
+    raf = 0;
+    ctx.clearRect(0, 0, W, H);
+    ripples = ripples.filter(p => now - p.t < RIPPLE_MS);
+    const band = cell * 1.1;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = ox + (c + 0.5) * cell;
+        const y = oy + (r + 0.5) * cell;
+        let glow = 0;
+        for (const p of ripples) {
+          const age = now - p.t;
+          const radius = age * RIPPLE_SPEED;
+          const k = (Math.hypot(x - p.x, y - p.y) - radius) / band;
+          glow = Math.max(glow, Math.exp(-k * k) * (1 - age / RIPPLE_MS));
+        }
+        const R = LILY[0] + (MARIGOLD[0] - LILY[0]) * glow;
+        const G = LILY[1] + (MARIGOLD[1] - LILY[1]) * glow;
+        const B = LILY[2] + (MARIGOLD[2] - LILY[2]) * glow;
+        ctx.fillStyle = `rgba(${R | 0},${G | 0},${B | 0},${0.28 + 0.72 * glow})`;
+        ctx.beginPath();
+        ctx.arc(x, y, cell * (0.07 + 0.2 * glow), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (focused) {
+      ctx.strokeStyle = `rgb(${MARIGOLD})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ox + (focus.c + 0.5) * cell, oy + (focus.r + 0.5) * cell, cell * 0.38, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    if (ripples.length) raf = requestAnimationFrame(frame);
+  }
+
+  function kick() {
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------- input ---------- */
+  function cellFromEvent(e) {
+    const rect = cvs.getBoundingClientRect();
+    const c = Math.floor((e.clientX - rect.left - ox) / cell);
+    const r = Math.floor((e.clientY - rect.top - oy) / cell);
+    return {
+      c: Math.min(Math.max(c, 0), cols - 1),
+      r: Math.min(Math.max(r, 0), rows - 1)
+    };
+  }
+
+  cvs.addEventListener('pointerdown', e => {
+    initAudio();
+    const { c, r } = cellFromEvent(e);
+    lastCell = c + ',' + r;
+    focus = { c, r };
+    drop(c, r, true);
+    touched();
+  });
+
+  cvs.addEventListener('pointermove', e => {
+    if (!e.buttons) return;
+    const { c, r } = cellFromEvent(e);
+    const key = c + ',' + r;
+    if (key === lastCell) return;
+    lastCell = key;
+    focus = { c, r };
+    drop(c, r, true);
+    touched();
+  });
+
+  cvs.addEventListener('keydown', e => {
+    const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (moves[e.key]) {
+      e.preventDefault();
+      focus.c = Math.min(Math.max(focus.c + moves[e.key][0], 0), cols - 1);
+      focus.r = Math.min(Math.max(focus.r + moves[e.key][1], 0), rows - 1);
+      kick();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      initAudio();
+      drop(focus.c, focus.r, true);
+      touched();
+    }
+  });
+
+  cvs.addEventListener('focus', () => { focused = true; kick(); });
+  cvs.addEventListener('blur', () => { focused = false; kick(); });
+
+  /* ---------- the pond keeps going when nobody is playing ---------- */
+  setInterval(() => {
+    if (reduce.matches || document.hidden) return;
+    if (performance.now() - lastTouch < 3500) return;
+    drop(Math.floor(Math.random() * cols), Math.floor(Math.random() * rows), false);
+  }, 2600);
+
+  new ResizeObserver(layout).observe(hero);
+  layout();
+
+  if (!reduce.matches) {
+    setTimeout(() => drop(Math.floor(cols / 2), Math.floor(rows / 2), false), 500);
+  }
+})();
+</script>
+</body>
+</html>
