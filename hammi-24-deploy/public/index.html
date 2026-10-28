@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hammi 24</title>
+<meta name="description" content="A 24-hour endurance race where every car thinks for itself. Make a team, set the strategy, watch it race.">
+<meta name="theme-color" content="#06080c">
+<link rel="preload" href="/fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css?v=9">
+</head>
+<body>
+<main>
+<section id="stage" class="stage" aria-label="Live race">
+  <canvas id="scene" aria-label="3D view of the race"></canvas>
+  <div id="labels" class="labels"></div>
+
+  <div class="hud-top">
+    <div class="bug">
+      <div class="logo">HAMMI<b>24</b></div>
+      <div id="flag" class="flag green" role="status"><i></i><span id="flagText">GREEN</span></div>
+      <div class="clock">
+        <span id="hour" class="hour">HOUR 1</span>
+        <strong id="elapsed">-:--:--</strong>
+        <span id="left" class="left">&nbsp;</span>
+      </div>
+    </div>
+    <div class="cond">
+      <div class="condcell"><span class="k">TRACK TIME</span><strong id="tod">--:--</strong><span id="dayNight" class="k">&nbsp;</span></div>
+      <div class="condcell"><span class="k">WEATHER</span><strong id="weather">DRY</strong><span id="forecast" class="k">&nbsp;</span></div>
+      <button id="voiceBtn" class="voicebtn" aria-pressed="false" title="Commentary with voices"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zm-7 9a7 7 0 0 0 6 6.93V21H8v2h8v-2h-3v-3.07A7 7 0 0 0 19 11h-2a5 5 0 0 1-10 0H5z" fill="currentColor"/></svg><span>COMMENTARY</span></button>
+      <button id="teamBtn" class="teambtn" aria-controls="drawer" aria-expanded="false">My team</button>
+    </div>
+  </div>
+
+  <div id="caption" class="caption" hidden aria-live="polite"><b id="capWho"></b><span id="capText"></span></div>
+  <div id="rcBanner" class="rcbanner" hidden><span class="rclabel">RACE CONTROL</span><span id="rcText"></span></div>
+  <div id="fcy" class="fcy" hidden>FULL COURSE YELLOW <span id="fcyWhy"></span></div>
+
+  <aside id="tower" class="tower" aria-label="Timing tower">
+    <div class="tower-head">
+      <span id="lapNo">LAP -</span>
+      <div class="modes" role="group" aria-label="Tower shows">
+        <button data-mode="gap" aria-pressed="true">GAP</button>
+        <button data-mode="int" aria-pressed="false">INT</button>
+        <button data-mode="last" aria-pressed="false">LAST</button>
+        <button data-mode="tyre" aria-pressed="false">TYRE</button>
+      </div>
+    </div>
+    <ol id="towerRows" class="tower-rows"></ol>
+    <button id="towerMore" class="tower-more">ALL CARS</button>
+  </aside>
+
+  <div id="lower" class="lower" aria-live="off">
+    <div id="radio" class="radio" hidden><span class="rlabel">TEAM RADIO</span><p id="radioText"></p></div>
+    <div class="l3">
+      <div id="l3Pos" class="l3pos">P-</div>
+      <div id="l3Num" class="l3num">-</div>
+      <div class="l3id"><strong id="l3Team">-</strong><span id="l3Driver">-</span></div>
+      <div id="l3Data" class="l3data"></div>
+    </div>
+  </div>
+
+  <div class="mapbox">
+    <div id="cams" class="cams" role="group" aria-label="Camera" hidden>
+      <button data-cam="tv" aria-pressed="true">TV</button>
+      <button data-cam="chase" aria-pressed="false">CHASE</button>
+      <button data-cam="onboard" aria-pressed="false">ONBOARD</button>
+      <button data-cam="heli" aria-pressed="false">HELI</button>
+      <button data-cam="orbit" aria-pressed="false">FREE</button>
+    </div>
+    <canvas id="map" class="minimap" aria-label="Track map with the cars on it"></canvas>
+  </div>
+
+  <div id="breakView" class="break" hidden>
+    <p class="k">NEXT RACE STARTS IN</p>
+    <p id="countdown" class="countdown">--:--</p>
+    <p id="breakNote" class="note"></p>
+    <button id="enterCta" class="primary" hidden>Enter my team</button>
+  </div>
+</section>
+
+<section class="data">
+  <div class="panel timing" aria-label="Timing">
+    <div class="ph"><h2>Live timing</h2><span id="carCount" class="k"></span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>POS</th><th class="tl">TEAM</th><th class="tl">DRIVER</th><th>LAP</th><th>GAP</th><th>INT</th><th>LAST</th><th>BEST</th><th>TYRE</th><th>FUEL</th><th>PIT</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="entryList" class="entries" hidden></div>
+  </div>
+
+  <div class="panel carcard" aria-label="Selected car">
+    <div class="ph"><h2>Car data</h2><span id="carSub" class="k"></span></div>
+    <div id="carHead" class="carhead"></div>
+    <div id="carStats" class="carstats"></div>
+    <h3>Team radio</h3>
+    <ol id="thoughts" class="thoughts"></ol>
+  </div>
+
+  <div class="panel feedcard" aria-label="Race control">
+    <div class="ph"><h2>Race control</h2></div>
+    <ol id="feed" class="feed"></ol>
+  </div>
+</section>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" aria-label="My team" hidden>
+  <button id="closeDrawer" class="icon close" aria-label="Close">×</button>
+  <div id="signedOut" hidden>
+    <h2>Make a team</h2>
+    <p>Sign in with Velora to make your team. It's free. Your team is named after your Velora username, and you can rename it.</p>
+    <button id="loginBtn" class="primary">Sign in with Velora</button>
+    <p id="loginNote" class="note" hidden>Waiting for you to approve on Velora… <a id="loginLink" href="#" target="_blank" rel="noopener noreferrer">Open the sign-in page again</a></p>
+  </div>
+
+  <div id="noTeam" hidden>
+    <h2>Make a team</h2>
+    <p id="hello"></p>
+    <button id="createBtn" class="primary">Create my team</button>
+  </div>
+
+  <div id="hasTeam" hidden>
+    <section class="block">
+      <div id="entryBox"></div>
+    </section>
+
+    <section class="block">
+      <h2>Team</h2>
+      <form id="teamForm" class="form">
+        <label>Name <input id="tName" maxlength="24" autocomplete="off" required></label>
+        <label>Car number <input id="tNumber" type="number" min="1" max="99" step="1" required></label>
+        <fieldset><legend>Colour</legend><div id="swatches" class="swatches"></div></fieldset>
+        <fieldset><legend>Drivers</legend>
+          <input id="d0" maxlength="20" aria-label="Driver 1" required>
+          <input id="d1" maxlength="20" aria-label="Driver 2" required>
+          <input id="d2" maxlength="20" aria-label="Driver 3" required>
+        </fieldset>
+        <button class="small">Save team</button>
+        <p id="teamMsg" class="note" role="status"></p>
+      </form>
+    </section>
+
+    <section class="block">
+      <h2>Strategy</h2>
+      <p class="note">Changes reach the car straight away, even mid-race.</p>
+      <form id="stratForm" class="form strat">
+        <label>Driver swap every
+          <select id="sStint"><option value="0.5">30 min</option><option value="1">1 hour</option><option value="1.5">1.5 hours</option><option value="2">2 hours</option><option value="2.5">2.5 hours</option><option value="3">3 hours</option><option value="3.5">3.5 hours</option><option value="4">4 hours</option></select>
+          <small>Drivers get tired the longer they drive and recover while they rest. Tired drivers are slower and make more mistakes. Each swap adds a few seconds to a stop.</small>
+        </label>
+        <label>New tyres when worn <output id="oWear">75%</output>
+          <input id="sWear" type="range" min="40" max="100" step="5">
+          <small>Worn tyres lose grip, and past 100% they can puncture.</small>
+        </label>
+        <label class="check"><input id="sDouble" type="checkbox"> Keep tyres through a fuel stop when they're under 45% worn</label>
+        <label>Dry tyre
+          <select id="sTyre"><option value="auto">Let the AI choose</option><option value="soft">Soft: fastest, wears out quickest</option><option value="medium">Medium</option><option value="hard">Hard: slowest, lasts longest</option></select>
+        </label>
+        <label>Fuel kept in reserve <output id="oRes">1 lap</output>
+          <input id="sRes" type="range" min="0" max="4" step="1">
+          <small>A full tank lasts about 29 laps (an hour). Less reserve means fewer stops, but more risk of running dry.</small>
+        </label>
+        <label>Fuel load
+          <select id="sLoad"><option value="full">Full tank</option><option value="light">Light: 60% tank, quicker car, more stops</option></select>
+        </label>
+        <label>Aggression <output id="oAgg">3</output>
+          <input id="sAgg" type="range" min="1" max="5" step="1">
+          <small>1 saves the car. 5 is flat out: quicker, but burns fuel and tyres and crashes more.</small>
+        </label>
+        <label>At night
+          <select id="sNight"><option value="0">Same as day</option><option value="1">1, very careful</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5, flat out</option></select>
+        </label>
+        <label>Rain call
+          <select id="sRain"><option value="early">Early: switch to wet tyres at the first drops</option><option value="normal">Normal</option><option value="late">Late: gamble on slicks as long as possible</option></select>
+        </label>
+        <label>In traffic
+          <select id="sTraffic"><option value="defend">Defend hard</option><option value="balanced">Balanced</option><option value="letby">Let faster cars by</option></select>
+        </label>
+        <label class="check"><input id="sYellow" type="checkbox"> Pit under a full course yellow (cheaper stop)</label>
+        <label class="check"><input id="sPush" type="checkbox"> Flat out in the last hour</label>
+        <label>AI personality
+          <select id="sPers"><option value="calculated">Calculated</option><option value="bold">Bold</option><option value="steady">Steady</option></select>
+          <small>Changes how the car talks and makes its own calls, like when to gamble on tyres.</small>
+        </label>
+        <button class="small">Save strategy</button>
+        <p id="stratMsg" class="note" role="status"></p>
+      </form>
+      <button id="boxBtn" class="ghost" hidden>Box this lap</button>
+    </section>
+
+    <section class="block">
+      <p id="stats" class="note"></p>
+      <p id="whoami" class="note"></p>
+      <button id="ownerStart" class="ghost" hidden>Start the race now (owner)</button>
+      <button id="logoutBtn" class="link">Sign out</button>
+    </section>
+  </div>
+</aside>
+
+<script src="/view3d.js?v=9"></script>
+<script src="/commentary.js?v=9"></script>
+<script src="/app.js?v=9"></script>
+</body>
+</html>
