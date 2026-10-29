@@ -582,7 +582,7 @@ export function createView(opts) {
   // the hammi.ca family; teams made with Velora sign-in and the top Pixel Wall painters get boards
   // too, and one billboard shows the Pixel Wall itself. Both refresh once per race (/api/trackside).
   const BRANDS = [['hammi.ca', '#141821', '#ffcf3f'], ['VELORA', '#2f7de1', '#ffffff'], ['HAMMI 24', '#ffcf3f', '#141821'], ['PIXEL WALL', '#e8443a', '#ffffff'],
-    ['HOUSE EDGE', '#0f5132', '#f4e3a1'], ['LOWHORN', '#5b5ff0', '#ffffff'], ['LIFTOFF', '#f08a24', '#141821'], ['IKELENE', '#20b8c4', '#0b1a1f']];
+    ['HOUSE EDGE', '#0f5132', '#f4e3a1'], ['LOWHORN', '#5b5ff0', '#ffffff'], ['race.hammi.ca', '#f08a24', '#141821'], ['IKELENE', '#20b8c4', '#0b1a1f']];
   const SPONSOR_COLS = [['#141821', '#ffffff'], ['#2f7de1', '#ffffff'], ['#f4f4f4', '#141821'], ['#a45ee5', '#ffffff'], ['#2fb36d', '#0b1a12'], ['#e8443a', '#ffffff']];
   function sponsorTex(name, sub, bg, fg, w = 512, h = 64) {
     return canvasTex(w, h, (g) => {
