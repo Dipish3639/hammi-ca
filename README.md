@@ -1,8 +1,8 @@
 # hammi.ca
 
-The front door at hammi.ca: a blurred pond fills the whole background, ripples behind your pointer anywhere on the page, and chimes where you tap. Notes come from a major pentatonic scale (left to right climbs the scale, higher up the pond is higher pitched), so any combination sounds fine.
+The front door at hammi.ca, styled like an arcade: a pixel title screen over a drifting starfield and a neon grid floor, CRT scanlines across everything, and the games shown as arcade cabinets on a "Select game" screen. Insert coin, Press start and hovering a cabinet make little 8-bit sounds (Sound on/off in the top bar), and the 1UP score ticks up as you poke around. Try the Konami code.
 
-The water is a real wave simulation: each frame solves the 2D wave equation on a small grid, then shades it with refraction of the pond floor, a sun glint and a sky reflection. It is one static file (`index.html`) with no build step and no dependencies besides two Google Fonts.
+It is one static file (`index.html`) with no build step and no dependencies besides two Google Fonts (Press Start 2P and VT323).
 
 ## Run it locally
 
@@ -24,20 +24,10 @@ The `CNAME` file in this repo tells GitHub Pages which domain to serve.
 
 ## Adding or editing a game
 
-Games are the `<li class="project">` blocks inside `<main id="games">` in `index.html`. To add one, copy a whole block and change the image, name and description. If the game has a page or download, make the block's `<div class="project-link">` an `<a class="project-link" href="...">` and change the "coming soon" line to say what the link does. Put images in `img/`. Screenshots work best at about 5:6 (portrait); the image box crops to that shape. A logo on a transparent background goes in a `<span class="shot logo">` instead, which fits it inside the box without cropping.
-
-The Games link in the top bar and the heading text are in the same file.
+Each game is one `<li>` inside `<ul class="cabinets">` in `index.html`. To add one, copy a whole `<li>` and change the marquee name, the image in the screen and the description. If the game has a page or download, make the cabinet an `<a class="cab" href="...">` (instead of a `<div class="cab">`) and change the last line to say what the link does. Add the class `cyan` to a cabinet to make it cyan instead of pink. Put images in `img/`. The screen is 4:3 and fits the image inside it without cropping, so logos on a transparent background look best.
 
 ## Changing it
 
-- Colors are the five custom properties at the top of the stylesheet.
-- The scale is the `SEMITONES` array in the script. Swap in `[0, 3, 5, 7, 10]` for a minor pentatonic.
-- `--blur` at the top of the stylesheet sets how soft the water background is (set it to `0px` for sharp water).
-- `body` sets `touch-action: pan-y`, so up-and-down finger drags scroll the page while taps and sideways drags still reach the water. A tap plays a note only if the finger didn't move, so scrolling stays quiet.
-- The water look is the block of constants under "water look: tweak these" in the script:
-  - `DAMPING` is how long ripples last (closer to 1 lasts longer).
-  - `STEPS_PER_FRAME` is how fast waves travel.
-  - `SMOOTH` removes pixel-sized ripples so the water looks silky (keep it under 0.3; higher also shortens how long fine ripples last).
-  - `REFRACT` and `SLOPE` control how much ripples bend the floor and how steep they look.
-  - `SPEC_POWER` sets how tight the sun glints are.
-- The pond floor (colors and the soft light patches) is built in `buildFloor()`.
+- Colors are the custom properties at the top of the stylesheet.
+- The sounds are the note lists (`COIN`, `START`, `HOVER`, `ONEUP`) in the script: each entry is a frequency and a length in seconds.
+- Animations (flicker, blinking text, the moving floor and the stars) all stop for visitors who ask for reduced motion.
