@@ -29,6 +29,7 @@ const PERMISSIONS = Number(process.env.VELORA_PERMISSIONS || 1 * 65536);
 // Commentary voices (Kokoro). TTS=0 turns the neural voices off; viewers then hear their browser's voices.
 const TTS = process.env.TTS !== '0';
 const BOOTH_VOICES = (process.env.BOOTH_VOICES || 'bm_george,af_heart').split(',');
+const TTS_MAX_MB = Number(process.env.TTS_MAX_MB || 550); // the voice process is stopped if it grows past this
 
 function die(m) { console.error(m); process.exit(1); }
 if (!(RACE_HOURS > 0 && RACE_HOURS <= 48)) die('RACE_HOURS must be between 0 and 48.');
@@ -236,15 +237,25 @@ function startTts() {
   const me = { child, ready: false, waiting: new Map() };
   tts = me;
   try { require('os').setPriority(child.pid, 10); } catch {} // the race comes first
+  // memory guard: ikelene is small, so the voices never get to crowd out the race or Pixel Wall
+  const guard = setInterval(() => {
+    try {
+      const kb = Number((fs.readFileSync(`/proc/${child.pid}/status`, 'utf8').match(/VmRSS:\s+(\d+)/) || [])[1]);
+      if (kb / 1024 > TTS_MAX_MB) { console.error(`commentary: voice process used ${Math.round(kb / 1024)} MB (limit ${TTS_MAX_MB}), stopping it`); me.overMemory = true; child.kill('SIGKILL'); }
+    } catch { /* not on Linux, or already gone */ }
+  }, 2000);
+  guard.unref();
   child.on('message', (m) => {
     if (m.type === 'ready') { me.ready = true; console.log('commentary: neural voices ready'); }
     else if (m.type === 'failed') console.error('commentary: voice model failed to load:', m.error);
     else if (m.type === 'done') { const w = me.waiting.get(m.id); if (w) { me.waiting.delete(m.id); w(m); } }
   });
-  child.on('exit', (code) => {
+  child.on('exit', (code, signal) => {
+    clearInterval(guard);
     for (const w of me.waiting.values()) w({ error: 'worker_exit' });
     if (tts === me) tts = null;
-    if (code) { console.error('commentary: voice worker stopped, code', code, '- retrying in 10 minutes'); setTimeout(startTts, 10 * 60 * 1000).unref(); }
+    if (me.overMemory) console.error('commentary: neural voices off until the next restart; viewers hear browser voices');
+    else if (code || signal) { console.error('commentary: voice worker stopped,', code || signal, '- retrying in 10 minutes'); setTimeout(startTts, 10 * 60 * 1000).unref(); }
   });
 }
 startTts();

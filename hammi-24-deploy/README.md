@@ -47,6 +47,8 @@ watching.
 - Install the voices once: `npm install kokoro-js@1.2.1` in this folder. The model (about 90 MB)
   downloads from Hugging Face on the first start.
 - `BOOTH_VOICES` picks the two Kokoro voices, Mick first (default `bm_george,af_heart`).
+- `TTS_MAX_MB` (default 550): if the voice process grows past this it is stopped and the booth falls
+  back to browser voices, so the small server never runs out of memory.
 - `TTS=0` turns the neural voices off. Without them, browsers read the lines with their own voices.
 
 ## Run it (on ikelene)
