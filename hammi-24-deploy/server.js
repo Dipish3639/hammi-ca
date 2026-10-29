@@ -33,6 +33,7 @@ const PERMISSIONS = Number(process.env.VELORA_PERMISSIONS || 1 * 65536);
 // Commentary voices (Kokoro). TTS=0 turns the neural voices off; viewers then hear their browser's voices.
 const TTS = process.env.TTS !== '0';
 const BOOTH_VOICES = (process.env.BOOTH_VOICES || 'bm_george,af_heart').split(',');
+const WALL_URL = (process.env.WALL_URL || 'http://127.0.0.1:3100').replace(/\/+$/, ''); // Pixel Wall, for the trackside billboard
 const TTS_MAX_MB = Number(process.env.TTS_MAX_MB || 680); // the voice process is stopped if it grows past this
 
 function die(m) { console.error(m); process.exit(1); }
@@ -167,6 +168,26 @@ function strategyOf(id) {
   return t ? t.strategy : (botStrategies.get(id) || S.DEFAULT_STRATEGY);
 }
 
+// ---- trackside: the Pixel Wall billboard and sponsor boards, refreshed once per race ----
+let trackside = { wall: null, painters: [], teams: [], race: 0 };
+async function refreshTrackside() {
+  const next = { wall: trackside.wall, painters: trackside.painters, teams: [], race: race ? race.number : raceCount };
+  try {
+    const r = await fetch(WALL_URL + '/api/canvas', { signal: AbortSignal.timeout(8000) });
+    const w = r.ok ? await r.json() : null;
+    if (w && w.w * w.h <= 256 * 256 && Array.isArray(w.palette) && typeof w.data === 'string') next.wall = { w: w.w, h: w.h, palette: w.palette.slice(0, 32), blank: w.blank, data: w.data };
+    const c = await fetch(WALL_URL + '/api/changes?since=-1', { signal: AbortSignal.timeout(8000) });
+    const top = c.ok ? (await c.json()).top : null;
+    if (Array.isArray(top)) next.painters = top.map((x) => String(x.name || '').slice(0, 24)).filter(Boolean).slice(0, 8);
+  } catch (e) { console.log('trackside: pixel wall not reachable,', e.message); }
+  // teams people made with Velora sign-in, newest race first, then everyone else who has one
+  const inRace = race ? race.cars.filter((c) => !c.bot && teams.has(c.id)).map((c) => teams.get(c.id).name) : [];
+  const others = [...teams.values()].map((t) => t.name).filter((n) => !inRace.includes(n));
+  next.teams = [...inRace, ...others].slice(0, 16);
+  trackside = next;
+}
+setTimeout(refreshTrackside, 3000).unref();
+
 // ---- race lifecycle ----------------------------------------------------------
 function startRace() {
   booth.reset();
@@ -193,6 +214,7 @@ function startRace() {
   lastTick = Date.now();
   saveNow();
   console.log(`race ${race.number} started with ${race.cars.length} cars`);
+  refreshTrackside();
 }
 if (race && race.botStrategies) for (const [k, v] of Object.entries(race.botStrategies)) botStrategies.set(k, v);
 
@@ -439,6 +461,7 @@ async function api(req, res, url) {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     return send(res, 200, { length: T.LENGTH, step: T.STEP, points: T.points, pitIn: T.PIT_IN, pitOut: T.PIT_OUT, corners: T.corners, lapTime: T.lapTime });
   }
+  if (req.method === 'GET' && p === '/api/trackside') return send(res, 200, trackside);
   if (req.method === 'GET' && p === '/api/race') {
     const out = { ...phaseInfo(), race: race ? S.snapshot(race) : null, voices: !!(tts && tts.ready) };
     if (race) {
