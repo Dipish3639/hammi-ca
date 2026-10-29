@@ -5,7 +5,7 @@
 'use strict';
 
 const MODEL = process.env.TTS_MODEL || 'onnx-community/Kokoro-82M-v1.0-ONNX';
-const THREADS = Number(process.env.TTS_THREADS || 2);
+const THREADS = Number(process.env.TTS_THREADS || 1);
 
 function wav16(samples, rate) {
   const data = Buffer.alloc(samples.length * 2);

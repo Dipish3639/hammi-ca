@@ -29,7 +29,7 @@ const PERMISSIONS = Number(process.env.VELORA_PERMISSIONS || 1 * 65536);
 // Commentary voices (Kokoro). TTS=0 turns the neural voices off; viewers then hear their browser's voices.
 const TTS = process.env.TTS !== '0';
 const BOOTH_VOICES = (process.env.BOOTH_VOICES || 'bm_george,af_heart').split(',');
-const TTS_MAX_MB = Number(process.env.TTS_MAX_MB || 550); // the voice process is stopped if it grows past this
+const TTS_MAX_MB = Number(process.env.TTS_MAX_MB || 680); // the voice process is stopped if it grows past this
 
 function die(m) { console.error(m); process.exit(1); }
 if (!(RACE_HOURS > 0 && RACE_HOURS <= 48)) die('RACE_HOURS must be between 0 and 48.');
@@ -234,7 +234,8 @@ let ttsRecycles = [];         // times the voice process was restarted for memor
 function startTts() {
   if (!TTS) return;
   try { require.resolve('kokoro-js'); } catch { console.log('commentary: kokoro-js is not installed, viewers will hear browser voices'); return; }
-  const child = fork(path.join(__dirname, 'tts-worker.js'), [], { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] });
+  // few malloc arenas: onnxruntime threads otherwise each keep their own and memory balloons
+  const child = fork(path.join(__dirname, 'tts-worker.js'), [], { stdio: ['ignore', 'inherit', 'inherit', 'ipc'], env: { ...process.env, MALLOC_ARENA_MAX: '2', MALLOC_TRIM_THRESHOLD_: '131072' } });
   const me = { child, ready: false, waiting: new Map() };
   tts = me;
   try { require('os').setPriority(child.pid, 10); } catch {} // the race comes first
