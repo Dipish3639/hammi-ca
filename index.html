@@ -6,7 +6,7 @@
 <title>hammi.ca</title>
 <meta name="description" content="Small games for the PC, and a wall you can paint on in your browser.">
 <meta name="theme-color" content="#0E1029">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230E1029'/%3E%3Crect x='1' width='6' height='8' fill='%231A1424'/%3E%3Crect x='2' y='1' width='4' height='6' fill='%23F1EAD6'/%3E%3Cpath fill='%23D8262B' d='M3 2h2v1h-2zM2 3h4v1h-4zM3 4h2v1h-2zM3 5h2v1h-2z'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230E1029'/%3E%3Cpath fill='%23F1EAD6' d='M1 1h2v2h2v-2h2v5h-2v-2h-2v2h-2z'/%3E%3Crect x='1' y='7' width='6' height='1' fill='%23D8262B'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -41,10 +41,9 @@
   }
   a { color: inherit; }
   :focus-visible { outline: 3px solid var(--cream); outline-offset: 4px; }
-  svg.px { display: block; shape-rendering: crispEdges; overflow: visible; }
 
-  /* ---------- the screen itself: falling suits, scanlines, vignette ---------- */
-  #suits {
+  /* ---------- the screen itself: stars, scanlines, vignette ---------- */
+  #stars {
     position: fixed;
     inset: 0;
     width: 100%;
@@ -96,7 +95,7 @@
   .hud .value { color: var(--cream); }
   .hud .right { display: flex; align-items: center; gap: 14px; }
 
-  /* red casino button with a cream rim and a hard dark outline */
+  /* red pixel button with a cream rim and a hard dark outline */
   .btn {
     background: var(--red);
     border: 3px solid var(--cream);
@@ -113,7 +112,7 @@
   .btn:hover { background: var(--cream); color: var(--red); text-shadow: none; }
   .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 3px var(--ink); }
 
-  /* ---------- title screen, laid out like the House Edge logo ---------- */
+  /* ---------- title screen ---------- */
   .title {
     position: relative;
     min-height: calc(100vh - 80px);
@@ -125,68 +124,15 @@
     text-align: center;
     padding: 40px 0 72px;
   }
-  .fan {
-    position: relative;
-    width: clamp(150px, 30vw, 260px);
-    aspect-ratio: 2 / 1;
-    margin-bottom: clamp(-18px, -1.5vw, -8px);
-  }
-  .fan svg {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 30%;
-    transform-origin: 50% 140%;
-    transform: translateX(-50%) rotate(var(--r));
-    filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.45));
-    transition: transform 0.2s steps(3);
-  }
-  .fan svg:nth-child(1) { --r: -27deg; }
-  .fan svg:nth-child(2) { --r: -9deg; }
-  .fan svg:nth-child(3) { --r: 9deg; }
-  .fan svg:nth-child(4) { --r: 27deg; }
-  .title:hover .fan svg:nth-child(1) { --r: -36deg; }
-  .title:hover .fan svg:nth-child(2) { --r: -12deg; }
-  .title:hover .fan svg:nth-child(3) { --r: 12deg; }
-  .title:hover .fan svg:nth-child(4) { --r: 36deg; }
-
-  .logo-row {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(8px, 2vw, 22px);
-  }
-  .logo-row .side {
-    width: clamp(40px, 8vw, 84px);
-    filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.5));
-    animation: spin 4s infinite steps(1);
-  }
-  .logo-row .side.r { animation-delay: -2s; }
-  @keyframes spin { 50% { transform: scaleX(-1); } }
   .logo {
     margin: 0;
     font: clamp(2.1rem, 10.5vw, 5.6rem)/1.15 var(--pixel);
     letter-spacing: 0.04em;
   }
-  .logo .top { display: block; }
-  .logo .bot { display: inline-block; }
-  .logo .top { color: var(--cream); text-shadow: var(--outline), 0 0.14em 0 var(--ink); }
-  .logo .bot { position: relative; color: var(--red); text-shadow: var(--outline), 0 0.14em 0 var(--ink); }
-  .dice {
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    width: clamp(48px, 8vw, 88px);
-    height: clamp(48px, 8vw, 88px);
-    margin-left: 0.25em;
-    transform: translateY(-40%);
-  }
-  .dice svg { position: absolute; width: 62%; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.5)); }
-  .dice svg:nth-child(1) { left: 0; bottom: 0; transform: rotate(-8deg); }
-  .dice svg:nth-child(2) { right: 0; top: 0; transform: rotate(10deg); }
-
-  /* red line with a little diamond in the middle, like under "Edge" */
+  .logo span { display: block; text-shadow: var(--outline), 0 0.14em 0 var(--ink); }
+  .logo .top { color: var(--cream); }
+  .logo .bot { color: var(--red); }
+  /* red line with a little cream block in the middle, like under "Edge" in the logo */
   .rule {
     display: flex;
     align-items: center;
@@ -201,7 +147,7 @@
     background: var(--red);
     box-shadow: 0 0 0 2px var(--ink);
   }
-  .rule svg { width: 18px; }
+  .rule i { width: 10px; height: 10px; background: var(--cream); box-shadow: 0 0 0 2px var(--ink); }
 
   .tagline {
     max-width: 26em;
@@ -246,7 +192,7 @@
     text-align: center;
     color: var(--dim);
   }
-  .tables {
+  .games {
     list-style: none;
     margin: 3.5rem 0 0;
     padding: 0;
@@ -256,9 +202,8 @@
     justify-content: center;
   }
 
-  /* each game is a big playing card: cream rim, corner index, title band, screen, chips */
+  /* each game is a pixel panel: cream rim, red title band, screen */
   .card {
-    --suit: var(--red);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -272,26 +217,12 @@
     box-shadow: 0 0 0 4px var(--ink), inset 0 0 0 3px var(--ink), 10px 12px 0 4px rgba(0, 0, 0, 0.45);
     transition: transform 0.15s steps(3), box-shadow 0.15s steps(3);
   }
-  .card.black { --suit: var(--cream); }
   a.card:hover, a.card:focus-visible {
     transform: translateY(-8px) rotate(-1deg);
     box-shadow: 0 0 0 4px var(--ink), inset 0 0 0 3px var(--ink), 14px 20px 0 4px rgba(0, 0, 0, 0.45);
   }
-  .idx {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    font: 0.9rem/1 var(--pixel);
-    color: var(--suit);
-    text-shadow: 2px 2px 0 var(--ink);
-  }
-  .idx svg { width: 14px; }
-  .idx.tl { left: 10px; top: 12px; }
-  .idx.br { right: 10px; bottom: 12px; transform: rotate(180deg); }
   .band {
-    margin: 0 32px;
+    margin: 0;
     padding: 16px 10px;
     text-align: center;
     font: clamp(0.95rem, 2.6vw, 1.2rem)/1.2 var(--pixel);
@@ -334,23 +265,11 @@
   a.card:hover .screen img, a.card:hover .screen svg,
   a.card:focus-visible .screen img, a.card:focus-visible .screen svg { filter: brightness(1.15) saturate(1.2); }
 
-  /* a little row of chip stacks under the screen; they hop on hover */
-  .stacks {
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    margin: 16px 0 0;
-  }
-  .stacks svg { width: 34px; transition: transform 0.12s steps(2); }
-  .card:hover .stacks svg:nth-child(1) { transform: translateY(-6px); }
-  .card:hover .stacks svg:nth-child(2) { transform: translateY(-10px); transition-delay: 0.05s; }
-  .card:hover .stacks svg:nth-child(3) { transform: translateY(-6px); transition-delay: 0.1s; }
-
   .words {
     display: flex;
     flex-direction: column;
     flex: 1;
-    padding: 16px 10px 40px;
+    padding: 18px 10px 12px;
   }
   .words p { margin: 0; text-wrap: pretty; }
   .go {
@@ -360,7 +279,6 @@
     color: var(--red);
     text-shadow: 2px 2px 0 var(--ink);
   }
-  .card.black .go { color: var(--cream); }
   a.card .go::after { content: " \25B6"; }
   a.card:hover .go, a.card:focus-visible .go { color: var(--red); }
   .soon { animation: blink 1.6s infinite steps(1); }
@@ -375,7 +293,7 @@
   .foot .rule { margin-bottom: 1.6rem; }
   .foot .over { color: var(--cream); font-size: 0.8rem; text-shadow: 3px 3px 0 var(--red-2); }
 
-  /* toast for little moments (chip, secret code) */
+  /* toast for little moments (coin, secret code) */
   .toast {
     position: fixed;
     left: 50%;
@@ -399,59 +317,44 @@
     .wrap { padding: 0 16px; }
     body { font-size: 1.35rem; }
     .hud .stat.hide-sm { display: none; }
-    .logo .dice { display: none; }
-    .band { margin: 0 28px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .crt, .start, .soon, .logo-row .side { animation: none; }
+    .crt, .start, .soon { animation: none; }
   }
 </style>
 </head>
 <body>
 
-<canvas id="suits" aria-hidden="true"></canvas>
+<canvas id="stars" aria-hidden="true"></canvas>
 <div class="crt" aria-hidden="true"></div>
 
 <div class="wrap">
   <header class="hud">
-    <div class="stat"><span class="label">Chips</span><span class="value" id="score">000000</span></div>
-    <div class="stat hide-sm"><span class="label">House</span><span class="value">hammi.ca</span></div>
+    <div class="stat"><span class="label">1UP</span><span class="value" id="score">000000</span></div>
+    <div class="stat hide-sm"><span class="label">Hi-score</span><span class="value">hammi.ca</span></div>
     <div class="right">
-      <button class="btn" id="coin" type="button">Toss a chip</button>
+      <button class="btn" id="coin" type="button">Insert coin</button>
       <button class="btn" id="sound" type="button" aria-pressed="true">Sound on</button>
     </div>
   </header>
 
   <section class="title" aria-label="Title screen">
-    <div class="fan" aria-hidden="true">
-      <svg class="px" data-sprite="card:spade"></svg>
-      <svg class="px" data-sprite="card:heart"></svg>
-      <svg class="px" data-sprite="card:club"></svg>
-      <svg class="px" data-sprite="card:diamond"></svg>
-    </div>
-    <div class="logo-row">
-      <svg class="px side" data-sprite="chip" aria-hidden="true"></svg>
-      <h1 class="logo"><span class="top">HAMMI</span><span class="bot">.CA<span class="dice" aria-hidden="true"><svg class="px" data-sprite="die:5"></svg><svg class="px" data-sprite="die:3"></svg></span></span></h1>
-      <svg class="px side r" data-sprite="chip" aria-hidden="true"></svg>
-    </div>
-    <div class="rule" aria-hidden="true"><svg class="px" data-sprite="gem"></svg></div>
+    <h1 class="logo"><span class="top">HAMMI</span><span class="bot">.CA</span></h1>
+    <div class="rule" aria-hidden="true"><i></i></div>
     <p class="tagline">Small games for the PC, and a wall you can paint on in your browser.</p>
-    <a class="start" href="#games">Deal me in</a>
+    <a class="start" href="#games">Press start</a>
     <p class="credits-line">Credit <span id="credits">00</span></p>
   </section>
 
   <main class="select" id="games">
-    <h2>Pick a table</h2>
+    <h2>Select game</h2>
     <p class="intro">Two games on the floor right now. More coming.</p>
 
-    <ul class="tables">
+    <ul class="games">
       <li>
-        <div class="card black">
-          <span class="idx tl" aria-hidden="true">A<svg class="px" data-sprite="suit:spade:cream"></svg></span>
-          <span class="idx br" aria-hidden="true">A<svg class="px" data-sprite="suit:spade:cream"></svg></span>
+        <div class="card">
           <p class="band">House Edge</p>
           <div class="bezel"><span class="screen"><img src="img/house-edge.png" width="768" height="512" alt="House Edge logo: four aces fanned above the title, with red poker chips and dice."></span></div>
-          <div class="stacks" aria-hidden="true"><svg class="px" data-sprite="chip"></svg><svg class="px" data-sprite="chip"></svg><svg class="px" data-sprite="chip"></svg></div>
           <div class="words">
             <p>A small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Velora account.</p>
             <p class="go"><span class="soon">Windows download coming soon</span></p>
@@ -460,11 +363,8 @@
       </li>
       <li>
         <a class="card" href="https://wall.hammi.ca/">
-          <span class="idx tl" aria-hidden="true">A<svg class="px" data-sprite="suit:heart"></svg></span>
-          <span class="idx br" aria-hidden="true">A<svg class="px" data-sprite="suit:heart"></svg></span>
           <p class="band">Pixel Wall</p>
           <div class="bezel"><span class="screen"><svg viewBox="0 0 10 12" role="img" aria-label="A small grid of coloured pixels forming a heart." shape-rendering="crispEdges"><rect width="10" height="12" fill="#f4f6f8"/><g fill="#e50000"><rect x="2" y="3" width="2" height="1"/><rect x="6" y="3" width="2" height="1"/><rect x="1" y="4" width="4" height="2"/><rect x="5" y="4" width="4" height="2"/><rect x="2" y="6" width="6" height="1"/><rect x="3" y="7" width="4" height="1"/><rect x="4" y="8" width="2" height="1"/></g><g fill="#0083c7"><rect x="0" y="11" width="3" height="1"/></g><g fill="#e5d900"><rect x="3" y="11" width="3" height="1"/></g><g fill="#02be01"><rect x="6" y="11" width="4" height="1"/></g></svg></span></div>
-          <div class="stacks" aria-hidden="true"><svg class="px" data-sprite="chip"></svg><svg class="px" data-sprite="chip"></svg><svg class="px" data-sprite="chip"></svg></div>
           <div class="words">
             <p>One shared canvas that anyone can paint on. Every pixel costs Velora credits, and you sign in with a Velora account to buy them. Your pixels stay on the wall for everyone to see.</p>
             <p class="go">Open the wall</p>
@@ -475,9 +375,9 @@
   </main>
 
   <footer class="foot">
-    <div class="rule" aria-hidden="true"><svg class="px" data-sprite="gem"></svg></div>
-    <p class="over">Cash out?</p>
-    <p>The house always wins<br>&copy; <span id="year">2026</span> hammi.ca</p>
+    <div class="rule" aria-hidden="true"><i></i></div>
+    <p class="over">Game over?</p>
+    <p>Insert coin to continue<br>&copy; <span id="year">2026</span> hammi.ca</p>
   </footer>
 </div>
 
@@ -488,133 +388,23 @@
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  /* ---------- pixel sprites: cards, chips, dice, suits ---------- */
-  const PAL = { k: '#1A1424', c: '#F1EAD6', s: '#CFC4A8', r: '#D8262B', d: '#8E1418', n: '#0E1029' };
-  const SUITS = {
-    spade:   ['...x...', '..xxx..', '.xxxxx.', 'xxxxxxx', 'xxxxxxx', '.xx.xx.', '...x...', '..xxx..'],
-    heart:   ['.xx.xx.', 'xxxxxxx', 'xxxxxxx', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...'],
-    club:    ['..xxx..', '..xxx..', 'xx.x.xx', 'xxxxxxx', 'xx.x.xx', '...x...', '..xxx..'],
-    diamond: ['...x...', '..xxx..', '.xxxxx.', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...'],
-  };
-  const SUIT_INK = { spade: 'k', club: 'k', heart: 'r', diamond: 'r' };
-  const LETTER_A = ['.x.', 'x.x', 'xxx', 'x.x', 'x.x'];
-
-  function grid(w, h, fill = '.') { return Array.from({ length: h }, () => Array(w).fill(fill)); }
-  function stamp(g, map, x, y, ch) {
-    map.forEach((row, j) => [...row].forEach((p, i) => { if (p === 'x') g[y + j][x + i] = ch; }));
-  }
-
-  // an ace: dark outline, cream face shaded on the right and bottom, "A" in the corner, big suit in the middle
-  function card(suit) {
-    const W = 15, H = 21, g = grid(W, H), ink = SUIT_INK[suit];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const corner = (x === 0 || x === W - 1) && (y === 0 || y === H - 1);
-      if (corner) continue;
-      const edge = x === 0 || y === 0 || x === W - 1 || y === H - 1;
-      g[y][x] = edge ? 'k' : (x === W - 2 || y === H - 2 ? 's' : 'c');
-    }
-    stamp(g, LETTER_A, 2, 2, ink);
-    const m = SUITS[suit];
-    stamp(g, m, 4, Math.round((H - m.length) / 2) + 1, ink);
-    return g;
-  }
-
-  // a poker chip: red with cream notches round the rim and a dark middle
-  function chip() {
-    const N = 16, g = grid(N, N), c = (N - 1) / 2;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      const dx = x - c, dy = y - c, d = Math.hypot(dx, dy);
-      const a = (Math.atan2(dy, dx) * 180 / Math.PI + 382.5) % 45;
-      if (d > 8) continue;
-      if (d > 7) g[y][x] = 'k';
-      else if (d > 4.6) g[y][x] = a < 15 ? 'c' : (dy > 2 && d > 6 ? 'd' : 'r');
-      else if (d > 3.6) g[y][x] = 'c';
-      else g[y][x] = dy > 1 ? 'k' : 'n';
-    }
-    return g;
-  }
-
-  // a red die with a darker side and cream pips
-  const PIPS = { 1: [[1, 1]], 3: [[0, 0], [1, 1], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]] };
-  function die(n) {
-    const N = 14, g = grid(N, N);
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      const face = x < 12 && y < 12, side = x >= 2 && y >= 2;
-      if (!face && !side) continue;
-      g[y][x] = 'k';
-      if (x >= 1 && y >= 1 && x <= 12 && y <= 12) g[y][x] = (x <= 10 && y <= 10) ? 'r' : 'd';
-    }
-    for (const [i, j] of PIPS[n]) {
-      const px = 2 + i * 3, py = 2 + j * 3;
-      g[py][px] = g[py][px + 1] = g[py + 1][px] = g[py + 1][px + 1] = 'c';
-    }
-    return g;
-  }
-
-  function gem() {
-    const g = grid(9, 9);
-    const m = ['....x....', '...xxx...', '..xxxxx..', '.xxxxxxx.', 'xxxxxxxxx', '.xxxxxxx.', '..xxxxx..', '...xxx...', '....x....'];
-    stamp(g, m, 0, 0, 'k');
-    stamp(g, SUITS.diamond, 1, 1, 'r');
-    return g;
-  }
-
-  function suit(name, color) {
-    const m = SUITS[name], g = grid(7, m.length);
-    stamp(g, m, 0, 0, color === 'cream' ? 'c' : SUIT_INK[name]);
-    return g;
-  }
-
-  function toSvg(svg, g) {
-    const h = g.length, w = g[0].length;
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    let out = '';
-    g.forEach((row, y) => {
-      let x = 0;
-      while (x < w) {
-        const ch = row[x];
-        let run = 1;
-        while (x + run < w && row[x + run] === ch) run++;
-        if (ch !== '.') out += `<rect x="${x}" y="${y}" width="${run}" height="1" fill="${PAL[ch]}"/>`;
-        x += run;
-      }
-    });
-    svg.innerHTML = out;
-  }
-
-  const MAKERS = { card, chip, die: n => die(+n), gem, suit };
-  for (const el of document.querySelectorAll('[data-sprite]')) {
-    const [kind, ...args] = el.dataset.sprite.split(':');
-    toSvg(el, MAKERS[kind](...args));
-  }
-
-  /* ---------- background: little card suits drifting down ---------- */
-  const cvs = document.getElementById('suits');
+  /* ---------- starfield: square pixel stars drifting down, in cream and red ---------- */
+  const cvs = document.getElementById('stars');
   const ctx = cvs.getContext('2d');
-  const TILE = {};
-  for (const name of Object.keys(SUITS)) for (const col of ['#F1EAD6', '#D8262B']) {
-    const m = SUITS[name], t = document.createElement('canvas');
-    t.width = 7; t.height = m.length;
-    const tc = t.getContext('2d');
-    tc.fillStyle = col;
-    m.forEach((row, j) => [...row].forEach((p, i) => { if (p === 'x') tc.fillRect(i, j, 1, 1); }));
-    TILE[name + col] = t;
-  }
-  const TILES = Object.values(TILE);
-  let W = 0, H = 0, bits = [], raf = 0, last = 0;
+  const COLORS = ['#F1EAD6', '#F1EAD6', '#F1EAD6', '#F1EAD6', '#D8262B'];
+  let W = 0, H = 0, stars = [], raf = 0, last = 0;
 
   function layout() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth; H = window.innerHeight;
     cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    const count = Math.round(Math.min(70, (W * H) / 20000));
-    bits = Array.from({ length: count }, () => ({
+    const count = Math.round(Math.min(180, (W * H) / 7000));
+    stars = Array.from({ length: count }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
       z: 1 + Math.floor(Math.random() * 3),   // depth: 1 far, 3 near
-      img: TILES[Math.floor(Math.random() * TILES.length)],
+      c: COLORS[Math.floor(Math.random() * COLORS.length)],
       t: Math.random() * Math.PI * 2,
     }));
     draw(0);
@@ -622,13 +412,14 @@
 
   function draw(dt) {
     ctx.clearRect(0, 0, W, H);
-    for (const b of bits) {
-      b.y += b.z * 7 * dt;
-      b.t += dt * 1.5;
-      if (b.y > H) { b.y = -30; b.x = Math.random() * W; }
-      ctx.globalAlpha = 0.07 + 0.06 * b.z + 0.04 * Math.sin(b.t);
-      const s = b.z + 1;
-      ctx.drawImage(b.img, Math.round(b.x), Math.round(b.y), b.img.width * s, b.img.height * s);
+    for (const s of stars) {
+      s.y += s.z * 9 * dt;
+      s.t += dt * 2;
+      if (s.y > H) { s.y = -4; s.x = Math.random() * W; }
+      ctx.globalAlpha = 0.25 + 0.15 * s.z + 0.12 * Math.sin(s.t);
+      ctx.fillStyle = s.c;
+      const size = s.z === 3 ? 3 : 2;
+      ctx.fillRect(Math.round(s.x), Math.round(s.y), size, size);
     }
     ctx.globalAlpha = 1;
   }
@@ -685,10 +476,10 @@
     }
   }
 
-  const CHIP = [[1568, 0.03], [1175, 0.03], [1568, 0.05]];
+  const COIN = [[988, 0.07], [1319, 0.28]];
   const START = [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.2]];
   const HOVER = [[660, 0.04]];
-  const JACKPOT = [[1319, 0.1], [1568, 0.1], [2637, 0.1], [2093, 0.1], [2349, 0.1], [3136, 0.16]];
+  const ONEUP = [[1319, 0.1], [1568, 0.1], [2637, 0.1], [2093, 0.1], [2349, 0.1], [3136, 0.16]];
 
   soundBtn.addEventListener('click', () => {
     muted = !muted;
@@ -697,7 +488,7 @@
     if (!muted) blip(HOVER);
   });
 
-  /* ---------- chips, credits and a little toast ---------- */
+  /* ---------- score, credits and a little toast ---------- */
   const scoreEl = document.getElementById('score');
   const creditsEl = document.getElementById('credits');
   const toast = document.getElementById('toast');
@@ -718,8 +509,8 @@
     credits = Math.min(99, credits + 1);
     creditsEl.textContent = String(credits).padStart(2, '0');
     addScore(50);
-    blip(CHIP);
-    say(credits === 99 ? 'Table limit reached!' : 'Chip +1');
+    blip(COIN);
+    say(credits === 99 ? 'Credits maxed out!' : 'Credit +1');
   });
 
   document.querySelector('.start').addEventListener('click', () => {
@@ -740,8 +531,8 @@
     if (pos === CODE.length) {
       pos = 0;
       addScore(30000);
-      blip(JACKPOT);
-      say('Jackpot! +30000');
+      blip(ONEUP);
+      say('+30 lives');
     }
   });
 })();
