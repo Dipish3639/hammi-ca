@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>hammi.ca</title>
 <meta name="description" content="Small games for the PC, and a wall you can paint on in your browser.">
-<meta name="theme-color" content="#08080d">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%2308080d'/%3E%3Cpath fill='%23dbc971' d='M1 1h2v2h2V1h2v6H5V5H3v2H1z'/%3E%3Cpath fill='%23d5588e' d='M1 6h2v1H1zM5 6h2v1H5z'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#07060f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%2307060f'/%3E%3Cpath fill='%23ffa8d6' d='M1 1h2v2h2V1h2v6H5V5H3v2H1z'/%3E%3Cpath fill='%23ff2e88' d='M1 6h2v1H1zM5 6h2v1H5z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -16,18 +16,19 @@
      pixel type, chunky panels and neon glow.
      ------------------------------------------------------------------ */
   :root {
-    --bg: #08080d;
-    --panel: #12111e;
-    --panel-2: #1d1c32;
-    --cyan: #58c6d5;
-    --pink: #d5588e;
-    --yellow: #dbc971;
-    --orange: #d28c4c;
-    --red: #d86262;
-    --lime: #8ddb71;
-    --violet: #987dde;
-    --text: #ebe9fa;
-    --muted: #9693af;
+    --bg: #07060f;
+    --panel: #0f0d22;
+    --panel-2: #17143a;
+    --cyan: #2ee6ff;
+    --pink: #ff2e88;
+    /* theme: synthwave pink, purple and cyan */
+    --yellow: #ffa8d6;  /* light pink highlight */
+    --orange: #ff5fb0;
+    --red: #ff2e88;
+    --lime: #2ee6ff;
+    --violet: #9b5cff;
+    --text: #e7e4ff;
+    --muted: #8f8ab8;
     --pixel: "Press Start 2P", ui-monospace, monospace;
     --term: "VT323", ui-monospace, monospace;
   }
@@ -54,13 +55,13 @@
     pointer-events: none;
     filter: blur(80px);
     opacity: 0.5;
-    mask-image: linear-gradient(to bottom, #000000 30%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, #000000 30%, transparent);
+    mask-image: linear-gradient(to bottom, #000 30%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
   }
   .aurora i { position: absolute; border-radius: 50%; mix-blend-mode: screen; animation: drift 22s ease-in-out infinite alternate; }
-  .aurora i:nth-child(1) { width: 55vw; height: 40vh; left: 8vw; top: 10vh; background: #5444b1; }
-  .aurora i:nth-child(2) { width: 45vw; height: 35vh; left: 55vw; top: 5vh; background: #a1376b; animation-duration: 27s; animation-delay: -8s; }
-  .aurora i:nth-child(3) { width: 40vw; height: 30vh; left: 30vw; top: 32vh; background: #2d7c94; animation-duration: 31s; animation-delay: -15s; }
+  .aurora i:nth-child(1) { width: 55vw; height: 40vh; left: 8vw; top: 10vh; background: #3a1fd6; }
+  .aurora i:nth-child(2) { width: 45vw; height: 35vh; left: 55vw; top: 5vh; background: #c4146a; animation-duration: 27s; animation-delay: -8s; }
+  .aurora i:nth-child(3) { width: 40vw; height: 30vh; left: 30vw; top: 32vh; background: #0b8fb6; animation-duration: 31s; animation-delay: -15s; }
   @keyframes drift {
     0% { transform: translate(0, 0) scale(1); }
     50% { transform: translate(12vw, 6vh) scale(1.2); }
@@ -76,8 +77,8 @@
     pointer-events: none;
     background:
       linear-gradient(to bottom, var(--bg), transparent 35%),
-      repeating-linear-gradient(to right, rgba(213, 88, 142, 0.35) 0 2px, transparent 2px 70px),
-      repeating-linear-gradient(to bottom, rgba(213, 88, 142, 0.35) 0 2px, transparent 2px 46px);
+      repeating-linear-gradient(to right, rgba(255, 46, 136, 0.35) 0 2px, transparent 2px 70px),
+      repeating-linear-gradient(to bottom, rgba(255, 46, 136, 0.35) 0 2px, transparent 2px 46px);
     transform: perspective(300px) rotateX(58deg);
     transform-origin: bottom;
     animation: roll 2.2s linear infinite;
@@ -109,14 +110,14 @@
     font: 10px/1 var(--pixel);
     text-transform: uppercase;
     text-decoration: none;
-    color: #000000;
+    color: #000;
     background: var(--yellow);
     border: 0;
     cursor: pointer;
-    box-shadow: 0 0 0 3px #000000, inset -3px -3px 0 rgba(0, 0, 0, 0.3), inset 3px 3px 0 rgba(255, 255, 255, 0.55), 4px 4px 0 3px #000000;
+    box-shadow: 0 0 0 3px #000, inset -3px -3px 0 rgba(0, 0, 0, 0.3), inset 3px 3px 0 rgba(255, 255, 255, 0.55), 4px 4px 0 3px #000;
   }
-  .pbtn:hover { color: #000000; background: #e1da89; }
-  .pbtn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 3px #000000, inset 3px 3px 0 rgba(0, 0, 0, 0.3); }
+  .pbtn:hover { color: #000; background: #ffc6e4; }
+  .pbtn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 3px #000, inset 3px 3px 0 rgba(0, 0, 0, 0.3); }
 
   /* ---------- marquee header ---------- */
   .masthead {
@@ -126,18 +127,18 @@
     gap: 18px;
     padding: 30px 0 30px;
   }
-  .brand { display: flex; align-items: center; gap: 22px; color: #ffffff; text-decoration: none; }
-  .brand:hover { color: #ffffff; }
+  .brand { display: flex; align-items: center; gap: 22px; color: #fff; text-decoration: none; }
+  .brand:hover { color: #fff; }
   .app-icon {
     position: relative;
     flex: none;
     width: 72px;
     height: 72px;
     background: var(--panel-2);
-    box-shadow: 0 0 0 4px #000000, inset 0 0 0 3px var(--yellow), inset 0 0 0 6px #000000, 0 0 24px rgba(219, 201, 113, 0.35), 6px 6px 0 4px #000000;
+    box-shadow: 0 0 0 4px #000, inset 0 0 0 3px var(--yellow), inset 0 0 0 6px #000, 0 0 24px rgba(255, 168, 214, 0.35), 6px 6px 0 4px #000;
     -webkit-box-reflect: below 12px linear-gradient(transparent 60%, rgba(255, 255, 255, 0.16));
   }
-  .app-icon svg { position: absolute; inset: 12px; width: 48px; height: 48px; filter: drop-shadow(0 0 6px rgba(213, 88, 142, 0.6)); }
+  .app-icon svg { position: absolute; inset: 12px; width: 48px; height: 48px; filter: drop-shadow(0 0 6px rgba(255, 46, 136, 0.6)); }
   .app-icon .orbit { position: absolute; inset: -14px; border-radius: 50%; animation: spin 6s linear infinite; }
   .app-icon .orbit::after {
     content: "";
@@ -145,8 +146,8 @@
     top: -3px; left: 50%;
     width: 6px; height: 6px;
     margin-left: -3px;
-    background: #ffffff;
-    box-shadow: 0 0 6px 2px var(--cyan), 0 0 14px 4px rgba(88, 198, 213, 0.6);
+    background: #fff;
+    box-shadow: 0 0 6px 2px var(--cyan), 0 0 14px 4px rgba(46, 230, 255, 0.6);
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -159,14 +160,14 @@
   /* fighting-game style title: hot gradient fill, black outline, deep shadow */
   .logo .fill {
     display: inline-block;
-    background: linear-gradient(to bottom, #efeac0 0%, var(--yellow) 30%, var(--orange) 55%, var(--red) 80%, #8f2434 100%);
+    background: linear-gradient(to bottom, #ffe3f1 0%, var(--yellow) 28%, var(--orange) 52%, var(--red) 75%, #8a1fd6 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(3px 0 0 #000000) drop-shadow(-3px 0 0 #000000) drop-shadow(0 3px 0 #000000) drop-shadow(0 -3px 0 #000000) drop-shadow(5px 6px 0 var(--violet));
+    filter: drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(5px 6px 0 var(--violet));
   }
   .logo .tld {
-    background: linear-gradient(to bottom, #def4f7, var(--cyan) 45%, #497ad2 100%);
+    background: linear-gradient(to bottom, #d6fbff, var(--cyan) 45%, #1c6dff 100%);
     -webkit-background-clip: text;
     background-clip: text;
   }
@@ -187,15 +188,15 @@
     margin-top: 14px;
     font: 22px/1 var(--term);
     color: var(--cyan);
-    text-shadow: 0 0 8px rgba(88, 198, 213, 0.6);
+    text-shadow: 0 0 8px rgba(46, 230, 255, 0.6);
   }
   .slogan .caret { display: inline-block; width: 10px; height: 18px; margin-left: 3px; vertical-align: -2px; background: var(--cyan); animation: blink 0.8s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
   /* "Now in beta" starburst */
   .burst { position: relative; flex: none; width: 108px; height: 108px; display: grid; place-items: center; animation: bob 3s ease-in-out infinite; }
-  .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 10px rgba(213, 88, 142, 0.7)); animation: spin 16s linear infinite; }
-  .burst span { position: relative; transform: rotate(-12deg); font: 8px/1.6 var(--pixel); text-align: center; text-transform: uppercase; color: #ffffff; text-shadow: 2px 2px 0 #000000; }
+  .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.7)); animation: spin 16s linear infinite; }
+  .burst span { position: relative; transform: rotate(-12deg); font: 8px/1.6 var(--pixel); text-align: center; text-transform: uppercase; color: #fff; text-shadow: 2px 2px 0 #000; }
   .burst b { display: block; font-size: 13px; color: var(--yellow); font-weight: normal; }
   @keyframes bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.05); } }
 
@@ -207,8 +208,8 @@
     margin: 0;
     padding: 6px 8px;
     list-style: none;
-    background: #000000;
-    box-shadow: 0 0 0 3px var(--violet), 0 0 0 6px #000000, 0 0 22px rgba(152, 125, 222, 0.45);
+    background: #000;
+    box-shadow: 0 0 0 3px var(--violet), 0 0 0 6px #000, 0 0 22px rgba(138, 92, 255, 0.45);
   }
   .nav li { position: relative; z-index: 1; }
   .nav a {
@@ -220,14 +221,14 @@
     text-decoration: none;
     transition: color 0.2s;
   }
-  .nav a:hover, .nav a.on { color: #ffffff; }
+  .nav a:hover, .nav a.on { color: #fff; }
   .nav .lamp {
     position: absolute;
     z-index: 0;
     left: 0;
     width: 0;
-    background: rgba(213, 88, 142, 0.18);
-    box-shadow: inset 0 0 0 2px var(--pink), 0 0 14px rgba(213, 88, 142, 0.5);
+    background: rgba(255, 46, 136, 0.18);
+    box-shadow: inset 0 0 0 2px var(--pink), 0 0 14px rgba(255, 46, 136, 0.5);
     transition: left 0.35s steps(6), width 0.35s steps(6);
     pointer-events: none;
   }
@@ -245,11 +246,11 @@
   .nav .new-li a { color: var(--yellow); }
 
   /* ---------- news ticker ---------- */
-  .ticker { display: flex; align-items: center; overflow: hidden; margin-top: 6px; background: #000000; border-bottom: 3px solid var(--violet); }
-  .ticker .label { flex: none; padding: 7px 10px; font: 9px/1.6 var(--pixel); text-transform: uppercase; color: #000000; background: var(--yellow); animation: label 1.2s steps(1) infinite; }
-  @keyframes label { 50% { background: var(--pink); color: #ffffff; } }
+  .ticker { display: flex; align-items: center; overflow: hidden; margin-top: 6px; background: #000; border-bottom: 3px solid var(--violet); }
+  .ticker .label { flex: none; padding: 7px 10px; font: 9px/1.6 var(--pixel); text-transform: uppercase; color: #000; background: var(--yellow); animation: label 1.2s steps(1) infinite; }
+  @keyframes label { 50% { background: var(--pink); color: #fff; } }
   .ticker .track { flex: 1; overflow: hidden; }
-  .ticker .run { display: inline-flex; gap: 56px; padding-left: 24px; white-space: nowrap; font-size: 22px; color: #d6d3ec; animation: tick 32s linear infinite; }
+  .ticker .run { display: inline-flex; gap: 56px; padding-left: 24px; white-space: nowrap; font-size: 22px; color: #cfcaf5; animation: tick 32s linear infinite; }
   .ticker .run b { color: var(--cyan); font-weight: normal; }
   .ticker:hover .run { animation-play-state: paused; }
   @keyframes tick { to { transform: translateX(-50%); } }
@@ -261,8 +262,8 @@
     gap: 28px;
     margin-top: 22px;
     padding: 26px;
-    background: rgba(13, 12, 22, 0.9);
-    box-shadow: 0 0 0 3px #000000, 0 0 0 6px #343054, 0 0 0 9px #000000, 0 24px 60px rgba(0, 0, 0, 0.7);
+    background: rgba(10, 8, 26, 0.9);
+    box-shadow: 0 0 0 3px #000, 0 0 0 6px #2a2460, 0 0 0 9px #000, 0 24px 60px rgba(0, 0, 0, 0.7);
   }
 
   /* title screen box with a spinning neon border */
@@ -285,19 +286,19 @@
     inset: 4px;
     z-index: -1;
     background:
-      radial-gradient(ellipse 70% 120% at 50% 120%, rgba(213, 88, 142, 0.25), transparent 60%),
+      radial-gradient(ellipse 70% 120% at 50% 120%, rgba(255, 46, 136, 0.25), transparent 60%),
       repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255, 255, 255, 0.025) 3px 4px),
-      #0f0e1b;
+      #0b0920;
   }
-  .hero h2 { margin: 0 0 14px; font: clamp(15px, 2.6vw, 22px)/1.4 var(--pixel); color: #ffffff; text-shadow: 3px 3px 0 var(--pink); }
-  .hero p { margin: 0; font-size: 24px; color: #dfddf6; }
+  .hero h2 { margin: 0 0 14px; font: clamp(15px, 2.6vw, 22px)/1.4 var(--pixel); color: #fff; text-shadow: 3px 3px 0 var(--pink); }
+  .hero p { margin: 0; font-size: 24px; color: #d8d4ff; }
 
   .section-title {
     margin: 0 0 22px;
     text-align: center;
     font: clamp(15px, 2.4vw, 20px)/1.4 var(--pixel);
     color: var(--yellow);
-    text-shadow: 3px 3px 0 #8f2434, 0 0 14px rgba(219, 201, 113, 0.4);
+    text-shadow: 3px 3px 0 #6a1fb3, 0 0 14px rgba(255, 168, 214, 0.4);
     scroll-margin-top: 16px;
   }
 
@@ -310,14 +311,14 @@
     gap: 22px;
     padding: 20px;
     background: linear-gradient(to bottom, var(--panel-2), var(--panel));
-    box-shadow: 0 0 0 3px #000000, 0 0 0 6px #3a375e, 0 0 0 9px #000000, 8px 10px 0 9px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 3px #000, 0 0 0 6px #2f2a6b, 0 0 0 9px #000, 8px 10px 0 9px rgba(0, 0, 0, 0.6);
     transition: transform 0.2s steps(3), box-shadow 0.2s steps(3);
   }
   .game:hover, .game:focus-within {
     transform: translate(-3px, -5px);
-    box-shadow: 0 0 0 3px #000000, 0 0 0 6px var(--cyan), 0 0 0 9px #000000, 0 0 30px rgba(88, 198, 213, 0.45), 12px 16px 0 9px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--cyan), 0 0 0 9px #000, 0 0 30px rgba(46, 230, 255, 0.45), 12px 16px 0 9px rgba(0, 0, 0, 0.6);
   }
-  .game.pink:hover, .game.pink:focus-within { box-shadow: 0 0 0 3px #000000, 0 0 0 6px var(--pink), 0 0 0 9px #000000, 0 0 30px rgba(213, 88, 142, 0.5), 12px 16px 0 9px rgba(0, 0, 0, 0.6); }
+  .game.pink:hover, .game.pink:focus-within { box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--pink), 0 0 0 9px #000, 0 0 30px rgba(255, 46, 136, 0.5), 12px 16px 0 9px rgba(0, 0, 0, 0.6); }
 
   .shot { align-self: start; margin-bottom: 54px; }
   .shot .frame {
@@ -325,11 +326,11 @@
     position: relative;
     aspect-ratio: 3 / 2;
     overflow: hidden;
-    background: #000000;
-    box-shadow: 0 0 0 3px #000000, 0 0 0 6px #474371, 0 0 0 9px #000000;
+    background: #000;
+    box-shadow: 0 0 0 3px #000, 0 0 0 6px #3b3480, 0 0 0 9px #000;
     -webkit-box-reflect: below 14px linear-gradient(transparent 66%, rgba(255, 255, 255, 0.18));
   }
-  .shot .frame.dark { background: radial-gradient(ellipse at 50% 30%, #3a375e, #0b0a16 80%); }
+  .shot .frame.dark { background: radial-gradient(ellipse at 50% 30%, #2f2a6b, #07061a 80%); }
   .shot .frame::before { /* screen scanlines */
     content: "";
     position: absolute;
@@ -352,10 +353,10 @@
   .game:hover .shot .frame::after { animation: sweep-once 0.8s ease-out; }
   @keyframes sweep-once { from { left: -70%; } to { left: 150%; } }
   .shot img, .shot canvas { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; }
-  .shot img { padding: 6%; filter: saturate(0.65); }
+  .shot img { padding: 6%; }
   .shot canvas { image-rendering: pixelated; }
 
-  .game h3 { margin: 4px 0 12px; font: 17px/1.3 var(--pixel); color: #ffffff; text-transform: uppercase; text-shadow: 3px 3px 0 var(--violet); }
+  .game h3 { margin: 4px 0 12px; font: 17px/1.3 var(--pixel); color: #fff; text-transform: uppercase; text-shadow: 3px 3px 0 var(--violet); }
   .game h3 a { color: inherit; text-decoration: none; }
   .game h3 a:hover { color: var(--yellow); }
   .meta { margin: 0 0 12px; }
@@ -365,40 +366,40 @@
     padding: 5px 6px;
     font: 8px/1 var(--pixel);
     text-transform: uppercase;
-    color: #d6d3ec;
-    background: #000000;
-    box-shadow: inset 0 0 0 2px #474371;
+    color: #cfcaf5;
+    background: #000;
+    box-shadow: inset 0 0 0 2px #3b3480;
   }
-  .tag.new { color: #000000; background: var(--yellow); box-shadow: none; animation: label 1s steps(1) infinite; }
-  .tag.web { color: #000000; background: var(--cyan); box-shadow: none; }
-  .game p.desc { margin: 0 0 18px; font-size: 21px; color: #d6d4ea; }
+  .tag.new { color: #000; background: var(--yellow); box-shadow: none; animation: label 1s steps(1) infinite; }
+  .tag.web { color: #000; background: var(--cyan); box-shadow: none; }
+  .game p.desc { margin: 0 0 18px; font-size: 21px; color: #d0ccf2; }
 
   .play { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
-  .pbtn.big { padding: 13px 16px; font-size: 12px; background: var(--pink); color: #ffffff; text-shadow: 2px 2px 0 #000000; animation: glow 1.6s ease-in-out infinite; }
-  .pbtn.big:hover { background: #de7ba7; color: #ffffff; }
+  .pbtn.big { padding: 13px 16px; font-size: 12px; background: var(--pink); color: #fff; text-shadow: 2px 2px 0 #000; animation: glow 1.6s ease-in-out infinite; }
+  .pbtn.big:hover { background: #ff5aa3; color: #fff; }
   .pbtn.big::after { content: " \25B6"; }
-  @keyframes glow { 50% { filter: drop-shadow(0 0 10px rgba(213, 88, 142, 0.9)); } }
-  .pbtn.off, .pbtn.off:hover { background: #312e48; color: var(--muted); text-shadow: none; cursor: default; transform: none; box-shadow: 0 0 0 3px #000000, 4px 4px 0 3px #000000; animation: none; }
+  @keyframes glow { 50% { filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.9)); } }
+  .pbtn.off, .pbtn.off:hover { background: #2a2650; color: var(--muted); text-shadow: none; cursor: default; transform: none; box-shadow: 0 0 0 3px #000, 4px 4px 0 3px #000; animation: none; }
   .play .note { font: 9px/1.5 var(--pixel); color: var(--yellow); animation: blink 1.4s steps(1) infinite; }
 
   /* ---------- sidebar ---------- */
   .side { display: grid; gap: 24px; align-content: start; }
-  .widget { background: #0f0e1b; box-shadow: 0 0 0 3px #000000, 0 0 0 6px #3a375e, 0 0 0 9px #000000; }
-  .widget h4 { margin: 0; padding: 10px 12px; font: 10px/1.4 var(--pixel); text-transform: uppercase; color: #000000; background: var(--cyan); }
-  .widget.status h4 { background: var(--lime); }
-  .widget.newsw h4 { background: var(--pink); color: #ffffff; text-shadow: 2px 2px 0 #000000; }
+  .widget { background: #0b0920; box-shadow: 0 0 0 3px #000, 0 0 0 6px #2f2a6b, 0 0 0 9px #000; }
+  .widget h4 { margin: 0; padding: 10px 12px; font: 10px/1.4 var(--pixel); text-transform: uppercase; color: #000; background: var(--cyan); }
+  .widget.status h4 { background: var(--violet); color: #fff; text-shadow: 2px 2px 0 #000; }
+  .widget.newsw h4 { background: var(--pink); color: #fff; text-shadow: 2px 2px 0 #000; }
   .widget .in { padding: 12px; }
-  .widget p { margin: 0; color: #d6d4ea; }
+  .widget p { margin: 0; color: #d0ccf2; }
   .widget ul { list-style: none; margin: 0; padding: 0; }
   .links a { position: relative; display: block; padding: 5px 0 5px 22px; text-decoration: none; font-size: 22px; }
   .links a::before { content: "\25B6"; position: absolute; left: 0; font-size: 14px; top: 9px; color: var(--pink); opacity: 0.4; }
   .links a:hover::before { opacity: 1; animation: blink 0.5s steps(1) infinite; }
-  .news li { padding: 7px 0; border-bottom: 2px dotted #343054; color: #d6d4ea; }
+  .news li { padding: 7px 0; border-bottom: 2px dotted #2a2460; color: #d0ccf2; }
   .news li:last-child { border-bottom: 0; }
   .news time { display: block; margin-bottom: 4px; font: 8px/1.4 var(--pixel); color: var(--yellow); text-transform: uppercase; }
-  .status-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; color: #d6d4ea; }
-  .led { flex: none; width: 10px; height: 10px; background: var(--lime); box-shadow: 0 0 0 2px #000000, 0 0 10px var(--lime); animation: led 1.6s steps(2) infinite; }
-  .led.wait { background: var(--orange); box-shadow: 0 0 0 2px #000000, 0 0 10px var(--orange); animation-duration: 2.4s; }
+  .status-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; color: #d0ccf2; }
+  .led { flex: none; width: 10px; height: 10px; background: var(--lime); box-shadow: 0 0 0 2px #000, 0 0 10px var(--lime); animation: led 1.6s steps(2) infinite; }
+  .led.wait { background: var(--orange); box-shadow: 0 0 0 2px #000, 0 0 10px var(--orange); animation-duration: 2.4s; }
   @keyframes led { 50% { opacity: 0.45; } }
 
   /* ---------- footer ---------- */
@@ -406,13 +407,13 @@
   .footer nav { margin-bottom: 6px; }
   .footer nav a { margin: 0 6px; }
   .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
-  .badge { display: inline-flex; font: 7px/1 var(--pixel); text-transform: uppercase; box-shadow: 0 0 0 2px #000000; }
+  .badge { display: inline-flex; font: 7px/1 var(--pixel); text-transform: uppercase; box-shadow: 0 0 0 2px #000; }
   .badge span { padding: 4px 5px; }
-  .badge span:first-child { background: #312e48; color: #d6d3ec; }
-  .badge.b1 span:last-child { background: var(--pink); color: #ffffff; }
-  .badge.b2 span:last-child { background: var(--cyan); color: #000000; }
-  .badge.b3 span:last-child { background: var(--lime); color: #000000; }
-  .badge.b4 span:last-child { background: var(--yellow); color: #000000; }
+  .badge span:first-child { background: #2a2650; color: #cfcaf5; }
+  .badge.b1 span:last-child { background: var(--pink); color: #fff; }
+  .badge.b2 span:last-child { background: var(--cyan); color: #000; }
+  .badge.b3 span:last-child { background: var(--violet); color: #fff; }
+  .badge.b4 span:last-child { background: var(--yellow); color: #000; }
 
   /* scroll-in */
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s steps(5), transform 0.5s steps(5); }
@@ -462,7 +463,7 @@
     <a class="brand" href="/">
       <span class="app-icon" aria-hidden="true">
         <span class="orbit"></span>
-        <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#dbc971" d="M1 0h2v3h2V0h2v8H5V5H3v3H1z"/><path fill="#d5588e" d="M1 7h2v1H1zM5 7h2v1H5z"/></svg>
+        <svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#ffa8d6" d="M1 0h2v3h2V0h2v8H5V5H3v3H1z"/><path fill="#ff2e88" d="M1 7h2v1H1zM5 7h2v1H5z"/></svg>
       </span>
       <span>
         <h1 class="logo"><span class="fill">HAMMI<span class="tld">.CA</span></span><span class="shine" aria-hidden="true">HAMMI.CA</span></h1>
@@ -471,7 +472,7 @@
     </a>
     <div class="burst" aria-label="Now in beta">
       <svg viewBox="0 0 100 100" aria-hidden="true" shape-rendering="crispEdges">
-        <polygon fill="#d5588e" stroke="#000000" stroke-width="4" points="50,2 58,17 74,8 74,26 92,26 83,42 98,50 83,58 92,74 74,74 74,92 58,83 50,98 42,83 26,92 26,74 8,74 17,58 2,50 17,42 8,26 26,26 26,8 42,17"/>
+        <polygon fill="#ff2e88" stroke="#000" stroke-width="4" points="50,2 58,17 74,8 74,26 92,26 83,42 98,50 83,58 92,74 74,74 74,92 58,83 50,98 42,83 26,92 26,74 8,74 17,58 2,50 17,42 8,26 26,26 26,8 42,17"/>
       </svg>
       <span>Now in<b>Beta!</b></span>
     </div>
@@ -595,7 +596,7 @@
   /* ---------- pixel stars twinkling and drifting down ---------- */
   const cvs = $('stars');
   const ctx = cvs.getContext('2d');
-  const COLS = ['#ffffff', '#ffffff', '#58c6d5', '#d5588e', '#dbc971'];
+  const COLS = ['#ffffff', '#ffffff', '#2ee6ff', '#ff2e88', '#9b5cff'];
   let W = 0, H = 0, stars = [], last = 0, raf = 0;
   function layout() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -635,10 +636,10 @@
 
   /* ---------- tiny Pixel Wall that paints itself ---------- */
   const wx = $('wall').getContext('2d');
-  const PAL = ['#b72e2e', '#d5588e', '#58c6d5', '#28769f', '#279827', '#8ddb71', '#dbc971', '#d28c4c', '#ffffff', '#987dde'];
+  const PAL = ['#ff2e88', '#ff5fb0', '#ffa8d6', '#2ee6ff', '#1c9bd6', '#9b5cff', '#6a3df0', '#d64dff', '#ffffff', '#c8f7ff'];
   const HEART = ['01100110', '11111111', '11111111', '01111110', '00111100', '00011000'];
-  wx.fillStyle = '#000000'; wx.fillRect(0, 0, 48, 32);
-  HEART.forEach((row, y) => [...row].forEach((c, x) => { if (c === '1') { wx.fillStyle = '#b72e2e'; wx.fillRect(20 + x, 11 + y, 1, 1); } }));
+  wx.fillStyle = '#000'; wx.fillRect(0, 0, 48, 32);
+  HEART.forEach((row, y) => [...row].forEach((c, x) => { if (c === '1') { wx.fillStyle = '#ff2e88'; wx.fillRect(20 + x, 11 + y, 1, 1); } }));
   for (let i = 0; i < 120; i++) { wx.fillStyle = PAL[i % PAL.length]; wx.fillRect(Math.random() * 48 | 0, Math.random() * 32 | 0, 1, 1); }
   let nextPaint = 0, brush = { x: 6, y: 6, c: PAL[2] };
   function paintWall(now) {
