@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hammi.ca :: Insert Coin</title>
+<title>hammi.ca</title>
 <meta name="description" content="Small games for the PC, and a wall you can paint on in your browser.">
 <meta name="theme-color" content="#07060f">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%2307060f'/%3E%3Cpath fill='%23ffe14d' d='M1 1h2v2h2V1h2v6H5V5H3v2H1z'/%3E%3Cpath fill='%23ff2e88' d='M1 6h2v1H1zM5 6h2v1H5z'/%3E%3C/svg%3E">
@@ -12,8 +12,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
   /* ------------------------------------------------------------------
-     hammi.ca, arcade cabinet edition. A dark 90s arcade: CRT glass,
-     pixel type, a score HUD, a game select screen and neon glow.
+     hammi.ca in a dark 90s arcade style: CRT glass,
+     pixel type, chunky panels and neon glow.
      ------------------------------------------------------------------ */
   :root {
     --bg: #07060f;
@@ -101,24 +101,6 @@
 
   .container { position: relative; z-index: 1; width: 980px; max-width: calc(100% - 32px); margin: 0 auto; }
 
-  /* ---------- score HUD ---------- */
-  .hud {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px 20px;
-    padding: 16px 0 0;
-    font: 11px/1.7 var(--pixel);
-    text-transform: uppercase;
-  }
-  .hud .stat span { display: block; }
-  .hud .lab { color: var(--red); }
-  .hud .p2 .lab { color: var(--cyan); }
-  .hud .hi .lab { color: var(--yellow); }
-  .hud .val { color: #fff; }
-  .hud .p2 .val { animation: blink 1s steps(1) infinite; color: var(--muted); }
-  .hud .right { display: flex; align-items: center; gap: 12px; }
 
   /* chunky pixel buttons with a stepped shadow */
   .pbtn {
@@ -135,8 +117,6 @@
   }
   .pbtn:hover { color: #000; background: #fff36b; }
   .pbtn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 3px #000, inset 3px 3px 0 rgba(0, 0, 0, 0.3); }
-  .pbtn.alt { background: var(--panel-2); color: var(--cyan); box-shadow: 0 0 0 3px #000, inset 0 0 0 2px var(--cyan), 4px 4px 0 3px #000; }
-  .pbtn.alt:hover { color: #fff; }
 
   /* ---------- marquee header ---------- */
   .masthead {
@@ -311,8 +291,6 @@
   }
   .hero h2 { margin: 0 0 14px; font: clamp(15px, 2.6vw, 22px)/1.4 var(--pixel); color: #fff; text-shadow: 3px 3px 0 var(--pink); }
   .hero p { margin: 0; font-size: 24px; color: #d8d4ff; }
-  .hero .start { display: inline-block; margin-top: 16px; font: 12px/1 var(--pixel); color: var(--yellow); text-decoration: none; text-shadow: 2px 2px 0 #000; animation: blink 1.1s steps(1) infinite; }
-  .hero .start:hover { animation: none; color: #fff; }
 
   .section-title {
     margin: 0 0 22px;
@@ -322,8 +300,6 @@
     text-shadow: 3px 3px 0 #b3001b, 0 0 14px rgba(255, 225, 77, 0.4);
     scroll-margin-top: 16px;
   }
-  .timer { display: block; margin-top: 8px; font: 10px/1 var(--pixel); color: var(--muted); text-shadow: none; }
-  .timer b { color: var(--red); font-weight: normal; }
 
   /* game select cards */
   .games { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
@@ -342,22 +318,6 @@
     box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--cyan), 0 0 0 9px #000, 0 0 30px rgba(46, 230, 255, 0.45), 12px 16px 0 9px rgba(0, 0, 0, 0.6);
   }
   .game.pink:hover, .game.pink:focus-within { box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--pink), 0 0 0 9px #000, 0 0 30px rgba(255, 46, 136, 0.5), 12px 16px 0 9px rgba(0, 0, 0, 0.6); }
-  /* "P1" select cursor that pops up on hover */
-  .game::before {
-    content: "P1";
-    position: absolute;
-    top: -22px;
-    left: 18px;
-    padding: 6px 7px;
-    font: 10px/1 var(--pixel);
-    color: #000;
-    background: var(--red);
-    box-shadow: 0 0 0 3px #000;
-    opacity: 0;
-    transform: translateY(6px);
-    transition: opacity 0.15s steps(2), transform 0.15s steps(2);
-  }
-  .game:hover::before, .game:focus-within::before { opacity: 1; transform: none; animation: blink 0.5s steps(1) 3; }
 
   .shot { align-self: start; margin-bottom: 54px; }
   .shot .frame {
@@ -427,7 +387,6 @@
   .widget h4 { margin: 0; padding: 10px 12px; font: 10px/1.4 var(--pixel); text-transform: uppercase; color: #000; background: var(--cyan); }
   .widget.status h4 { background: var(--lime); }
   .widget.newsw h4 { background: var(--pink); color: #fff; text-shadow: 2px 2px 0 #000; }
-  .widget.score h4 { background: var(--yellow); }
   .widget .in { padding: 12px; }
   .widget p { margin: 0; color: #d0ccf2; }
   .widget ul { list-style: none; margin: 0; padding: 0; }
@@ -441,16 +400,9 @@
   .led { flex: none; width: 10px; height: 10px; background: var(--lime); box-shadow: 0 0 0 2px #000, 0 0 10px var(--lime); animation: led 1.6s steps(2) infinite; }
   .led.wait { background: var(--orange); box-shadow: 0 0 0 2px #000, 0 0 10px var(--orange); animation-duration: 2.4s; }
   @keyframes led { 50% { opacity: 0.45; } }
-  .scores { font-size: 22px; }
-  .scores li { display: flex; justify-content: space-between; padding: 2px 0; color: #d0ccf2; }
-  .scores li span:first-child { color: var(--muted); }
-  .scores li.you span { color: var(--yellow); }
 
-  /* ---------- footer: continue countdown ---------- */
+  /* ---------- footer ---------- */
   .footer { padding: 34px 0 44px; text-align: center; color: var(--muted); font-size: 19px; }
-  .footer .over { margin: 0 0 6px; font: 16px/1.4 var(--pixel); color: var(--red); text-shadow: 3px 3px 0 #000; }
-  .footer .cont { margin: 0 0 16px; font: 11px/1.6 var(--pixel); color: #fff; }
-  .footer .cont b { color: var(--yellow); font-weight: normal; }
   .footer nav { margin-bottom: 6px; }
   .footer nav a { margin: 0 6px; }
   .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
@@ -461,24 +413,6 @@
   .badge.b2 span:last-child { background: var(--cyan); color: #000; }
   .badge.b3 span:last-child { background: var(--lime); color: #000; }
   .badge.b4 span:last-child { background: var(--yellow); color: #000; }
-
-  /* toast */
-  .toast {
-    position: fixed;
-    left: 50%;
-    bottom: 28px;
-    z-index: 90;
-    transform: translate(-50%, 200%);
-    padding: 12px 16px;
-    font: 11px/1.4 var(--pixel);
-    color: #000;
-    background: var(--yellow);
-    box-shadow: 0 0 0 3px #000, 5px 5px 0 3px #000;
-    white-space: nowrap;
-    visibility: hidden;
-    transition: transform 0.2s steps(4), visibility 0s 0.2s;
-  }
-  .toast.show { transform: translate(-50%, 0); visibility: visible; transition: transform 0.2s steps(4); }
 
   /* scroll-in */
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s steps(5), transform 0.5s steps(5); }
@@ -495,8 +429,6 @@
   @media (max-width: 560px) {
     body { font-size: 20px; }
     .container { max-width: calc(100% - 24px); }
-    .hud { font-size: 9px; }
-    .hud .hi { display: none; }
     .masthead { padding: 24px 0 26px; }
     .brand { gap: 16px; }
     .app-icon { width: 48px; height: 48px; }
@@ -526,16 +458,6 @@
 <div class="crt" aria-hidden="true"></div>
 
 <div class="container">
-  <div class="hud">
-    <div class="stat"><span class="lab">1P</span><span class="val" id="score">000000</span></div>
-    <div class="stat hi"><span class="lab">Hi-score</span><span class="val" id="hiscore">000000</span></div>
-    <div class="stat p2"><span class="lab">2P</span><span class="val">Press start</span></div>
-    <div class="right">
-      <button class="pbtn" id="coin" type="button">Insert coin</button>
-      <button class="pbtn alt" id="sound" type="button" aria-pressed="false">Sound off</button>
-    </div>
-  </div>
-
   <header class="masthead">
     <a class="brand" href="/">
       <span class="app-icon" aria-hidden="true">
@@ -568,11 +490,11 @@
     <span class="label">News</span>
     <div class="track">
       <div class="run">
-        <span><b>NOV 5</b> The site turned into an arcade. Insert coin!</span>
+        <span><b>NOV 5</b> The site got a new look.</span>
         <span><b>NOV 3</b> Velora is now called Nookara.</span>
         <span><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
         <span><b>SOON</b> House Edge for Windows.</span>
-        <span aria-hidden="true"><b>NOV 5</b> The site turned into an arcade. Insert coin!</span>
+        <span aria-hidden="true"><b>NOV 5</b> The site got a new look.</span>
         <span aria-hidden="true"><b>NOV 3</b> Velora is now called Nookara.</span>
         <span aria-hidden="true"><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
         <span aria-hidden="true"><b>SOON</b> House Edge for Windows.</span>
@@ -583,12 +505,11 @@
   <div class="page" id="top">
     <main>
       <section class="hero reveal">
-        <h2>Welcome, player 1!</h2>
+        <h2>Welcome to hammi.ca!</h2>
         <p>Small games for the PC, and a wall you can paint on in your browser.</p>
-        <a class="start" href="#games">Press start</a>
       </section>
 
-      <h2 class="section-title reveal" id="games">Select your game<span class="timer">Time <b id="timer">30</b></span></h2>
+      <h2 class="section-title reveal" id="games">Games</h2>
       <ul class="games">
         <li class="game reveal">
           <div class="shot">
@@ -621,17 +542,6 @@
         <div class="in"><p>Home of a few small games. Two are out right now, and more are on the way.</p></div>
       </section>
 
-      <section class="widget score reveal">
-        <h4>Your scores</h4>
-        <div class="in">
-          <ul class="scores">
-            <li class="you"><span>THIS VISIT</span><span id="score2">000000</span></li>
-            <li><span>BEST HERE</span><span id="best">000000</span></li>
-            <li><span>CREDITS</span><span id="credits">00</span></li>
-          </ul>
-        </div>
-      </section>
-
       <section class="widget reveal">
         <h4>Games</h4>
         <div class="in">
@@ -654,7 +564,7 @@
         <h4>What's new</h4>
         <div class="in">
           <ul class="news">
-            <li><time datetime="2026-11-05">Nov 5, 2026</time>The site turned into a 90s arcade.</li>
+            <li><time datetime="2026-11-05">Nov 5, 2026</time>The site got a new look.</li>
             <li><time datetime="2026-11-03">Nov 3, 2026</time>Velora is now called Nookara.</li>
             <li><time datetime="2026-10-27">Oct 27, 2026</time>Pixel Wall is open. Come paint!</li>
           </ul>
@@ -664,8 +574,6 @@
   </div>
 
   <footer class="footer">
-    <p class="over">Game over?</p>
-    <p class="cont">Continue? <b id="cont">9</b></p>
     <nav><a href="#top">Home</a> | <a href="#games">Games</a> | <a href="https://wall.hammi.ca/">Pixel Wall</a> | <a href="#about">About</a></nav>
     <div>&copy; <span id="year">2026</span> hammi.ca. Best played with the lights off.</div>
     <div class="badges" aria-hidden="true">
@@ -677,19 +585,12 @@
   </footer>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
 <script>
 (() => {
   document.body.classList.remove('no-js');
   document.getElementById('year').textContent = new Date().getFullYear();
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = id => document.getElementById(id);
-  const pad = (n, w) => String(n).padStart(w, '0');
-  const store = {
-    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
-  };
 
   /* ---------- pixel stars twinkling and drifting down ---------- */
   const cvs = $('stars');
@@ -758,75 +659,6 @@
     if (!document.hidden && !reduce) raf = requestAnimationFrame(frame);
   });
 
-  /* ---------- 8-bit sounds (off until you turn them on) ---------- */
-  let actx = null, muted = true;
-  function blip(notes, vol = 0.07) {
-    if (muted) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    actx = actx || new AC();
-    if (actx.state === 'suspended') actx.resume();
-    let t = actx.currentTime;
-    for (const [f, len] of notes) {
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.type = 'square'; o.frequency.value = f;
-      g.gain.setValueAtTime(vol, t);
-      g.gain.setValueAtTime(vol, t + len * 0.8);
-      g.gain.linearRampToValueAtTime(0.0001, t + len);
-      o.connect(g); g.connect(actx.destination);
-      o.start(t); o.stop(t + len);
-      t += len;
-    }
-  }
-  const COIN = [[988, 0.07], [1319, 0.28]];
-  const START = [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.2]];
-  const HOVER = [[660, 0.04]];
-  const ONEUP = [[1319, 0.1], [1568, 0.1], [2637, 0.1], [2093, 0.1], [2349, 0.1], [3136, 0.16]];
-  const soundBtn = $('sound');
-  soundBtn.addEventListener('click', () => {
-    muted = !muted;
-    soundBtn.textContent = muted ? 'Sound off' : 'Sound on';
-    soundBtn.setAttribute('aria-pressed', String(!muted));
-    blip(HOVER);
-  });
-
-  /* ---------- score, hi-score, credits ---------- */
-  let score = 0, credits = 0, best = parseInt(store.get('hammi-best') || '0', 10) || 0, toastTimer = 0;
-  const toast = $('toast');
-  function show() {
-    $('score').textContent = $('score2').textContent = pad(score, 6);
-    $('hiscore').textContent = $('best').textContent = pad(best, 6);
-    $('credits').textContent = pad(credits, 2);
-  }
-  function addScore(n) {
-    score = Math.min(999999, score + n);
-    if (score > best) { best = score; store.set('hammi-best', String(best)); }
-    show();
-  }
-  function say(text) {
-    toast.textContent = text;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 1700);
-  }
-  show();
-  $('coin').addEventListener('click', () => {
-    credits = Math.min(99, credits + 1);
-    addScore(50); blip(COIN);
-    say(credits === 99 ? 'Credits maxed out!' : 'Credit +1');
-  });
-  document.querySelector('.hero .start').addEventListener('click', () => { addScore(100); blip(START); });
-  for (const g of document.querySelectorAll('.game')) {
-    g.addEventListener('pointerenter', () => { addScore(10); blip(HOVER, 0.04); });
-  }
-  const CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-  let pos = 0;
-  document.addEventListener('keydown', e => {
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    pos = k === CODE[pos] ? pos + 1 : (k === CODE[0] ? 1 : 0);
-    if (pos === CODE.length) { pos = 0; addScore(30000); blip(ONEUP); say('+30 lives!'); }
-  });
-
   /* ---------- sliding nav cursor ---------- */
   const nav = $('nav');
   const lamp = nav.querySelector('.lamp');
@@ -836,7 +668,7 @@
     lamp.style.top = a.offsetTop + 'px'; lamp.style.height = a.offsetHeight + 'px';
   }
   for (const a of nav.querySelectorAll('a')) {
-    a.addEventListener('mouseenter', () => { moveTo(a); blip(HOVER, 0.03); });
+    a.addEventListener('mouseenter', () => moveTo(a));
     a.addEventListener('focus', () => moveTo(a));
   }
   nav.addEventListener('mouseleave', () => moveTo(home));
@@ -845,7 +677,7 @@
   moveTo(home);
 
   /* ---------- typing slogan ---------- */
-  const slogans = ['games & stuff, made after dark', 'paint a pixel, leave your mark', 'more games coming soon', 'insert coin to continue'];
+  const slogans = ['games & stuff, made after dark', 'paint a pixel, leave your mark', 'more games coming soon'];
   const sEl = $('slogan');
   if (!reduce) {
     let si = 0, ci = slogans[0].length, del = true;
@@ -855,13 +687,6 @@
       sEl.textContent = slogans[si].slice(0, Math.max(ci, 0)) || ' ';
       setTimeout(type, del ? 28 : 55);
     }, 3200);
-  }
-
-  /* ---------- select timer and continue countdown ---------- */
-  if (!reduce) {
-    let t = 30, c = 9;
-    setInterval(() => { t = t <= 0 ? 30 : t - 1; $('timer').textContent = pad(t, 2); }, 1000);
-    setInterval(() => { c = c <= 0 ? 9 : c - 1; $('cont').textContent = c; }, 900);
   }
 
   /* ---------- reveal on scroll ---------- */
