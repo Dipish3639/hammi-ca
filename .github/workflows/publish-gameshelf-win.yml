@@ -1,0 +1,26 @@
+name: Publish GameShelf for Windows
+# One-off: joins the split zip in .release/ and publishes it as a GitHub release asset.
+on:
+  push:
+    branches: [claude/project-thread-rp57sd]
+    paths: ['.release/**']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Join and check the zip
+        run: |
+          cd .release
+          cat GameShelf-0.1.2-win-x64.zip.part* > GameShelf-0.1.2-win-x64.zip
+          sha256sum -c SHA256
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create gameshelf-win-0.1.2 .release/GameShelf-0.1.2-win-x64.zip \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "GameShelf 0.1.2 for Windows" \
+            --notes "GameShelf for Windows (64-bit). Unzip anywhere and run GameShelf.exe. Your library, box art and the emulators GameShelf installs live in %APPDATA%\GameShelf. No games are included."
