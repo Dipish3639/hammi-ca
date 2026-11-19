@@ -380,6 +380,7 @@
   .pbtn.big::after { content: " \25B6"; }
   @keyframes glow { 50% { filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.9)); } }
   .pbtn.off, .pbtn.off:hover { background: #2a2650; color: var(--muted); text-shadow: none; cursor: default; transform: none; box-shadow: 0 0 0 3px #000, 4px 4px 0 3px #000; animation: none; }
+  .game p.fine { margin: 14px 0 0; font-size: 18px; color: var(--muted); }
   .play .note { font: 9px/1.5 var(--pixel); color: var(--yellow); animation: blink 1.4s steps(1) infinite; }
 
   /* ---------- sidebar ---------- */
@@ -491,10 +492,12 @@
     <span class="label">News</span>
     <div class="track">
       <div class="run">
+        <span><b>NOV 19</b> GameShelf for Windows is out!</span>
         <span><b>NOV 5</b> The site got a new look.</span>
         <span><b>NOV 3</b> Velora is now called Nookara.</span>
         <span><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
         <span><b>SOON</b> House Edge for Windows.</span>
+        <span aria-hidden="true"><b>NOV 19</b> GameShelf for Windows is out!</span>
         <span aria-hidden="true"><b>NOV 5</b> The site got a new look.</span>
         <span aria-hidden="true"><b>NOV 3</b> Velora is now called Nookara.</span>
         <span aria-hidden="true"><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
@@ -507,7 +510,7 @@
     <main>
       <section class="hero reveal">
         <h2>Welcome to hammi.ca!</h2>
-        <p>Small games for the PC, and a wall you can paint on in your browser.</p>
+        <p>Small games for the PC, a shelf for all your games, and a wall you can paint on in your browser.</p>
       </section>
 
       <h2 class="section-title reveal" id="games">Games</h2>
@@ -534,13 +537,25 @@
             <div class="play"><a class="pbtn big" href="https://wall.hammi.ca/">Open the wall</a></div>
           </div>
         </li>
+        <li class="game reveal">
+          <div class="shot">
+            <span class="frame dark"><img src="img/gameshelf.png" width="512" height="512" alt="The GameShelf app icon: a play button on a shelf of games."></span>
+          </div>
+          <div>
+            <h3>GameShelf</h3>
+            <p class="meta"><span class="tag new">New!</span><span class="tag">Windows</span><span class="tag">Launcher</span></p>
+            <p class="desc">All your games on one shelf, with big box art. Your Steam and Epic games show up by themselves, and when you add a folder of game files GameShelf works out which console each one is for and sets up an emulator to play it. No games are included; bring your own.</p>
+            <div class="play"><a class="pbtn big" href="https://github.com/Dipish3639/hammi-ca/releases/download/gameshelf-win-0.1.2/GameShelf-0.1.2-win-x64.zip">Download for Windows</a></div>
+            <p class="fine">Version 0.1.2, 64-bit Windows, 158 MB zip. Nothing to install: unzip it anywhere and run GameShelf.exe.</p>
+          </div>
+        </li>
       </ul>
     </main>
 
     <aside class="side">
       <section class="widget reveal" id="about">
         <h4>About</h4>
-        <div class="in"><p>Home of a few small games. Two are out right now, and more are on the way.</p></div>
+        <div class="in"><p>Home of a few small games. Three are out right now, and more are on the way.</p></div>
       </section>
 
       <section class="widget reveal">
@@ -549,6 +564,7 @@
           <ul class="links">
             <li><a href="#games">House Edge</a></li>
             <li><a href="https://wall.hammi.ca/">Pixel Wall</a></li>
+            <li><a href="#games">GameShelf</a></li>
           </ul>
         </div>
       </section>
@@ -557,6 +573,7 @@
         <h4>Server status</h4>
         <div class="in">
           <div class="status-row"><span class="led" aria-hidden="true"></span>Pixel Wall: online</div>
+          <div class="status-row"><span class="led" aria-hidden="true"></span>GameShelf download: ready</div>
           <div class="status-row"><span class="led wait" aria-hidden="true"></span>House Edge download: soon</div>
         </div>
       </section>
@@ -565,6 +582,7 @@
         <h4>What's new</h4>
         <div class="in">
           <ul class="news">
+            <li><time datetime="2026-11-19">Nov 19, 2026</time>GameShelf for Windows is out. Download it under Games.</li>
             <li><time datetime="2026-11-05">Nov 5, 2026</time>The site got a new look.</li>
             <li><time datetime="2026-11-03">Nov 3, 2026</time>Velora is now called Nookara.</li>
             <li><time datetime="2026-10-27">Oct 27, 2026</time>Pixel Wall is open. Come paint!</li>
