@@ -1,7 +1,7 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Orbit Climb</title>
-<meta name="description" content="Orbit Climb: a first-person parkour climb through three worlds, with a boss at the end of every layer. Plays in your browser.">
+<meta name="description" content="Orbit Climb: a first-person parkour climb through three worlds, with a boss at the end of every layer. Plays in your browser with keyboard and mouse or a controller.">
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:"Courier New",monospace;color:#fff;user-select:none}
 canvas{display:block}
@@ -41,6 +41,8 @@ canvas{display:block}
 .perk:hover{border-color:#7affff}.perk b{color:#fff}.perk i{float:right;font-style:normal;color:#7affff}.perk.max i{color:#8a8680}.perk.poor i{color:#a05a4a}
 .perk small{display:block;opacity:.7}.perk .lv{color:#ffd040}
 #go{font-size:22px;margin-top:10px;color:#ff4a2a}
+
+.pfocus{outline:3px solid #ffd040!important;outline-offset:2px}
 #resume{display:none;font-size:26px;color:#ffd040;margin-top:30px}
 </style></head><body>
 <div id="vig"></div><div id="hurt"></div>
@@ -51,7 +53,7 @@ canvas{display:block}
 <div id="menu"><h1>ORBIT CLIMB</h1>
 <p id="tag"></p>
 <p id="best"></p>
-<div id="resume">CLICK TO RESUME</div>
+<div id="resume">CLICK OR PRESS START TO RESUME</div>
 <div id="cols">
  <div id="left">
   <h3>1 · CHOOSE A WORLD</h3><div class="row" id="worlds"></div>
@@ -59,7 +61,8 @@ canvas{display:block}
   <div class="row" id="modes"><button class="btn" data-m="normal">NORMAL<small>the flood rises</small></button><button class="btn" data-m="hard">MELTDOWN<small>flood rises ~2x faster</small></button><button class="btn" data-m="zen">FREE CLIMB<small>no flood, just climb</small></button></div>
   <h3>HOW TO PLAY</h3>
   <p><span class="k">WASD</span> move <span class="k">MOUSE</span> look <span class="k">SPACE</span> jump / double jump <span class="k">SHIFT</span> air dash</p>
-  <p>Jump at the pillar holding <span class="k">W</span> to wall-run • Red pads launch you • Chests give run upgrades</p>
+  <p>🎮 Controller: <span class="k">L-STICK</span> move <span class="k">R-STICK</span> look <span class="k">A</span> jump <span class="k">B / X / RB</span> dash <span class="k">START</span> pause • D-pad + <span class="k">A</span> in menus</p>
+  <p>Jump at the pillar holding <span class="k">W</span> (or stick forward) to wall-run • Red pads launch you • Chests give run upgrades</p>
   <p><b style="color:#ff6a4a">Each layer ends in a boss.</b> Parkour onto the glowing cores to overload it. <b>Beat the 5th boss to conquer the world.</b></p>
  </div>
  <div id="right"><h3>WORKSHOP · PERMANENT UPGRADES</h3><div id="bank"></div><div id="perks"></div>
@@ -559,7 +562,7 @@ function reset(){
 function flash(s){const m=$('msg');m.textContent=s;m.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>m.style.opacity=0,900);}
 function announce(i){banner('LAYER '+(i+1)+' / '+Z.length,Z[i].name,Z[i].ui);}
 const score=()=>Math.floor(maxH*10)+orbN*150+bossK*1000;
-function endRun(){alive=false;started=false;bank+=runCells;saveMeta();clearBossStuff();}
+function endRun(){alive=false;started=false;padPlaying=false;bank+=runCells;saveMeta();clearBossStuff();}
 function die(why){const s=score();setBest(s);endRun();
   showMain(why||('SWALLOWED BY '+W.flood.name),MODES[mode].name+' — Score: '+s+'  •  Height: '+maxH.toFixed(1)+'m  •  Bosses: '+bossK+'/5  •  Best: '+bestOf(worldId,mode)+'  •  +◆'+runCells+' cells banked');
   document.exitPointerLock();}
@@ -570,28 +573,77 @@ function victory(){
     showMain('VICTORY!','You conquered '+W.name+' ★  •  Score: '+s+'  •  +◆'+runCells+' cells banked  •  Pick another world or go again');},3200);
 }
 menu.onclick=()=>{if(started&&alive)ren.domElement.requestPointerLock();};
-document.querySelectorAll('#modes button').forEach(b=>b.onclick=e=>{e.stopPropagation();mode=b.dataset.m;reset();started=true;announce(0);menu.style.display='none';ren.domElement.requestPointerLock();});
+let padPlaying=false,viaPad=false;
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=e=>{e.stopPropagation();mode=b.dataset.m;reset();started=true;announce(0);menu.style.display='none';if(viaPad)padPlaying=true;else ren.domElement.requestPointerLock();});
 document.addEventListener('pointerlockchange',()=>{running=document.pointerLockElement===ren.domElement;
-  if(running)menu.style.display='none';
-  else if(alive&&started){menu.style.display='flex';menu.querySelector('h1').textContent='PAUSED';$('cols').style.display='none';$('resume').style.display='block';}});
+  if(running){padPlaying=false;menu.style.display='none';}
+  else if(alive&&started&&!padPlaying){menu.style.display='flex';menu.querySelector('h1').textContent='PAUSED';$('cols').style.display='none';$('resume').style.display='block';}});
 document.addEventListener('mousemove',e=>{if(!running)return;yaw-=e.movementX*.0022;pitch=Math.max(-1.5,Math.min(1.5,pitch-e.movementY*.0022));});
 const fwd=()=>({x:-Math.sin(yaw),z:-Math.cos(yaw)});
-addEventListener('keydown',e=>{keys[e.code]=true;if(!running||!alive)return;
-  if(e.code==='Space'&&!e.repeat){e.preventDefault();
-    if(wall){dx+=wall.x*9;dz+=wall.z*9;vy=7.5;wall=null;wallCD=.6;flash('KICK!');}
-    else if(ground||coyote>0){vy=9*(1+.06*ul('jump'));ground=null;coyote=0;}
-    else if(jumps<1+ul('air')){vy=8.5*(1+.06*ul('jump'));jumps++;}}
-  if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&!ground&&dashN>0){dashN--;const f=fwd(),pw=13*(1+.3*ul('dash'));dx+=f.x*pw;dz+=f.z*pw;vy=Math.max(vy,2);fovK=1;}
+function doJump(){
+  if(wall){dx+=wall.x*9;dz+=wall.z*9;vy=7.5;wall=null;wallCD=.6;flash('KICK!');}
+  else if(ground||coyote>0){vy=9*(1+.06*ul('jump'));ground=null;coyote=0;}
+  else if(jumps<1+ul('air')){vy=8.5*(1+.06*ul('jump'));jumps++;}}
+function doDash(){if(!ground&&dashN>0){dashN--;const f=fwd(),pw=13*(1+.3*ul('dash'));dx+=f.x*pw;dz+=f.z*pw;vy=Math.max(vy,2);fovK=1;}}
+const playing=()=>(running||padPlaying)&&alive&&started;
+addEventListener('keydown',e=>{keys[e.code]=true;if(!playing())return;
+  if(e.code==='Space'&&!e.repeat){e.preventDefault();doJump();}
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight')doDash();
 });
 addEventListener('keyup',e=>keys[e.code]=false);
 
+
+// ================= CONTROLLER (Gamepad API, standard mapping) =================
+const pad={mx:0,my:0,prev:[],navT:0,focus:0};
+const dead=v=>Math.abs(v)<.18?0:(v-Math.sign(v)*.18)/.82;
+addEventListener('gamepadconnected',()=>flash('🎮 CONTROLLER CONNECTED'));
+function menuItems(){if(menu.style.display==='none')return [];if($('cols').style.display==='none')return [];
+  return [...menu.querySelectorAll('#worlds .btn,#modes .btn,.perk')];}
+function setFocus(items,i){items.forEach(el=>el.classList.remove('pfocus'));if(!items.length)return;pad.focus=Math.max(0,Math.min(items.length-1,i));const el=items[pad.focus];el.classList.add('pfocus');el.scrollIntoView({block:'nearest'});}
+function navMove(items,dxn,dyn){
+  const cur=items[pad.focus];if(!cur)return setFocus(items,0);
+  const r0=cur.getBoundingClientRect(),cx=r0.left+r0.width/2,cy=r0.top+r0.height/2;let best=-1,bd=1e9;
+  items.forEach((el,i)=>{if(i===pad.focus)return;const r=el.getBoundingClientRect(),ox=r.left+r.width/2-cx,oy=r.top+r.height/2-cy,along=ox*dxn+oy*dyn;
+    if(along<=4)return;const perp=Math.abs(ox*dyn-oy*dxn),d=along+perp*2.5;if(d<bd){bd=d;best=i;}});
+  if(best>=0)setFocus(items,best);}
+function pollPad(dt){
+  const gps=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const g of gps)if(g&&g.connected){gp=g;break;}
+  if(!gp){pad.mx=pad.my=0;return;}
+  const b=i=>gp.buttons[i]&&gp.buttons[i].pressed,pressed=i=>b(i)&&!pad.prev[i];
+  const ax=i=>dead(gp.axes[i]||0);
+  if(playing()){
+    pad.mx=ax(0);pad.my=ax(1);
+    const lx=ax(2),ly=ax(3);yaw-=lx*Math.abs(lx)*3.4*dt;pitch=Math.max(-1.5,Math.min(1.5,pitch-ly*Math.abs(ly)*2.6*dt));
+    if(pressed(0))doJump();
+    if(pressed(1)||pressed(2)||pressed(5)||pressed(7))doDash();
+    if(pressed(9)||pressed(8)){padPlaying=false;if(document.pointerLockElement)document.exitPointerLock();
+      menu.style.display='flex';menu.querySelector('h1').textContent='PAUSED';$('cols').style.display='none';$('resume').style.display='block';}
+  }else{
+    pad.mx=pad.my=0;
+    if(alive&&started&&menu.style.display!=='none'&&$('cols').style.display==='none'){ // paused
+      if(pressed(9)||pressed(0)){padPlaying=true;menu.style.display='none';}
+    }else{
+      const items=menuItems();
+      if(items.length){if(!items.some(el=>el.classList.contains('pfocus')))setFocus(items,Math.min(pad.focus,items.length-1));
+        const sx=ax(0),sy=ax(1);let mx=(b(15)?1:0)-(b(14)?1:0),my=(b(13)?1:0)-(b(12)?1:0);
+        if(!mx&&!my){if(Math.abs(sx)>.5)mx=Math.sign(sx);else if(Math.abs(sy)>.5)my=Math.sign(sy);}
+        pad.navT-=dt;
+        if(mx||my){if(pad.navT<=0){navMove(items,mx,my);pad.navT=pad.navT<-1?.25:.18;}}else pad.navT=0;
+        if(pressed(0)){const el=items[pad.focus];if(el){viaPad=true;el.click();viaPad=false;
+          const again=menuItems();const k=again.findIndex(x=>x.dataset.id&&x.dataset.id===el.dataset.id||x.dataset.w&&x.dataset.w===el.dataset.w);setFocus(again,k>=0?k:pad.focus);}}
+      }
+    }
+  }
+  pad.prev=gp.buttons.map(x=>x.pressed);
+}
 // ================= UPDATE =================
 function update(dt){
   t+=dt;invuln-=dt;
   for(const p of plats)if(p.pad)p.pad.material.emissiveIntensity=1.5+Math.sin(t*8);
   const f=fwd(),rx=-f.z,rz=f.x;
-  const fi=(keys.KeyW?1:0)-(keys.KeyS?1:0),si=(keys.KeyD?1:0)-(keys.KeyA?1:0);
-  let wx=f.x*fi+rx*si,wz=f.z*fi+rz*si;const wl=Math.hypot(wx,wz),SP=SPEED*(1+.1*ul('speed'));if(wl>0){wx=wx/wl*SP;wz=wz/wl*SP;}
+  const fi=Math.max(-1,Math.min(1,(keys.KeyW?1:0)-(keys.KeyS?1:0)-pad.my)),si=Math.max(-1,Math.min(1,(keys.KeyD?1:0)-(keys.KeyA?1:0)+pad.mx));
+  const fwdHeld=keys.KeyW||pad.my<-.4;
+  let wx=f.x*fi+rx*si,wz=f.z*fi+rz*si;const wl=Math.hypot(wx,wz),SP=SPEED*(1+.1*ul('speed'))*Math.min(1,wl);if(wl>0){wx=wx/wl*SP;wz=wz/wl*SP;}
   const acc=Math.min(1,(ground?14:5)*dt);vx+=(wx-vx)*acc;vz+=(wz-vz)*acc;
   const dd=Math.exp(-3.2*dt);dx*=dd;dz*=dd;
   vy-=(wall?5:G*(1-.07*ul('grav')))*dt;if(wall)vy=Math.max(vy,-2);
@@ -599,9 +651,9 @@ function update(dt){
   coyote-=dt;wallCD-=dt;
   const pd=Math.hypot(px,pz),nx=px/pd,nz=pz/pd;
   if(pd<PILLAR+PR){px=nx*(PILLAR+PR);pz=nz*(PILLAR+PR);const vn=vx*nx+vz*nz;if(vn<0){vx-=vn*nx;vz-=vn*nz;}const dn=dx*nx+dz*nz;if(dn<0){dx-=dn*nx;dz-=dn*nz;}
-    if(!ground&&keys.KeyW&&wallCD<=0&&(wall||wallLeft>0)){if(!wall){vy=Math.max(Math.min(vy,1.5),0);wallT=1.1+.5*ul('wall');wallLeft--;flash('WALL RUN');}wall={x:nx,z:nz};}
+    if(!ground&&fwdHeld&&wallCD<=0&&(wall||wallLeft>0)){if(!wall){vy=Math.max(Math.min(vy,1.5),0);wallT=1.1+.5*ul('wall');wallLeft--;flash('WALL RUN');}wall={x:nx,z:nz};}
   }else if(pd>PILLAR+PR+.15)wall=null;
-  if(wall&&(!keys.KeyW||(wallT-=dt)<=0)){wall=null;wallCD=.4;}
+  if(wall&&(!fwdHeld||(wallT-=dt)<=0)){wall=null;wallCD=.4;}
   for(const o of obst){if(py<o.y1-.05&&py+1.8>o.y0){const ox=px-o.x,oz=pz-o.z,od=Math.hypot(ox,oz);if(od<o.rad+PR&&od>0){px=o.x+ox/od*(o.rad+PR);pz=o.z+oz/od*(o.rad+PR);}}}
   const fallV=vy;ground=null;
   for(const p of plats){
@@ -667,10 +719,11 @@ function visuals(dt,T){
 }
 let last=performance.now(),T=0;
 function loop(now){const dt=Math.min(.033,(now-last)/1000);last=now;T+=dt;
-  if(running&&alive)update(dt);
+  pollPad(dt);
+  if(playing())update(dt);
   else if(!started){yaw+=dt*.08;cam.rotation.set(pitch,yaw,0);} // slow look-around behind the main menu
   visuals(dt,T);
-  if(!(running&&alive))for(const d of debris){d.v.y-=20*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.s.x*dt;}
+  if(!playing())for(const d of debris){d.v.y-=20*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.s.x*dt;}
   if(composer)composer.render();else ren.render(scene,cam);
   requestAnimationFrame(loop);}
 let startWorld='concrete';try{if(WORLDS[localStorage.ocWorld])startWorld=localStorage.ocWorld;}catch(e){}
