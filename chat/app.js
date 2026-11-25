@@ -48,7 +48,12 @@ const S = {
   editing: null,             // { id, vkey }
   home: { ws: null, status: 'closed', retry: 0 },
   lastSent: {},              // vkey -> message id (for ↑ edit)
+  presence: {},              // username -> { status, ... } from Nookara
+  emojiUrls: {},             // eid -> url
+  session: null,             // GET /bonfire/session
+  sigs: {},                  // message key -> 'ok' | 'bad'
 };
+const HC = window.HammiCrypto;
 const skey = (origin, sid) => origin + '|' + sid;
 const vkeyOf = v => v.kind === 'channel' ? `c|${v.origin}|${v.cid}` : v.kind === 'dm' ? `d|${String(v.user).toLowerCase()}` : 'home';
 
@@ -58,6 +63,7 @@ async function nk(path, opts = {}) {
   const headers = { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(S.token ? { Authorization: `Bearer ${S.token}` } : {}), ...(opts.headers || {}) };
   let res;
   try { res = await fetch(NOOKARA + path, { ...opts, headers }); } catch { throw Object.assign(new Error('nookara_unreachable'), { status: 0 }); }
+  HC?.noteClock(res.headers.get('date'));
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401 && S.token && ['unauthorized', 'invalid_token', 'token_expired'].includes(data.error)) signedOut('Your Nookara sign-in ended. Sign in again.');
@@ -240,6 +246,7 @@ async function loadDetail(c, sid) {
 async function loadMembers(c, sid) {
   const d = await api(c, `/servers/${encodeURIComponent(sid)}/members`);
   S.members[skey(c.origin, sid)] = d.members || [];
+  watchPresence((d.members || []).filter(m => !m.bot && (m.kind === 'velora' || m.velora_id)).slice(0, 400).map(m => m.username));
   renderRight();
 }
 
@@ -249,7 +256,7 @@ function onInstFrame(c, m) {
     case 'auth_success': c.user = m.user || c.user; c.isAdmin = !!m.instance_admin; sendInst(c, { type: 'chat_hello' }); return;
     case 'chat_ready':
       c.retry = 0; setStatus(c, 'open');
-      loadServers(c).then(() => { const v = S.view; if (v.kind === 'channel' && v.origin === c.origin) { S.msgs[vkeyOf(v)] = null; loadMessages(v); } }).catch(e => sys('could not load servers on ' + hostOf(c.origin) + ': ' + e.message, 'err'));
+      loadServers(c).then(() => { loadEmojis().then(() => renderLog()); const v = S.view; if (v.kind === 'channel' && v.origin === c.origin) { S.msgs[vkeyOf(v)] = null; loadMessages(v); } }).catch(e => sys('could not load servers on ' + hostOf(c.origin) + ': ' + e.message, 'err'));
       return;
     case 'instance_restarting': sys(hostOf(c.origin) + ' is restarting...'); return;
     case 'account_restricted': setStatus(c, 'restricted', m.message || 'Ember is switched off for this account.'); return;
@@ -261,6 +268,7 @@ function onInstFrame(c, m) {
     case 'chat_ack': settle(c, m.nonce, m.message); return;
     case 'chat_error': {
       const p = c.acks.get(m.nonce);
+      if (p && p.resend && SIGN_REFUSED.has(m.error)) { c.acks.delete(m.nonce); p.resend(); return; }
       if (p) { c.acks.delete(m.nonce); updateMessage(p.vkey, p.id, x => ({ ...x, pending: false, failed: m.error || 'failed' })); }
       if (!['chat_typing', 'chat_read'].includes(m.request)) sys(`${hostOf(c.origin)}: ${m.message || m.error}`, 'err');
       return;
@@ -293,31 +301,45 @@ function openHome() {
     if (S.token) setTimeout(openHome, backoff(S.home.retry++));
   };
 }
-const imToMsg = m => ({
-  id: 'im' + m.id, imId: m.id, created_at: toMs(m.sent_at || m.created_at), edited_at: m.edited_at ? toMs(m.edited_at) : null,
-  author: m.from_system ? null : { username: m.from }, system: !!m.from_system, reactions: m.reactions,
-  body: m.enc && !m.body ? null : m.body, sealed: !!m.enc, reply: m.reply ? { author: { username: m.reply.from }, body: m.reply.gone ? 'deleted message' : m.reply.body } : null,
-});
+// a raw /im message -> what the log shows. Encrypted ones are opened with this device's keys (e2ee.js)
+async function imToMsg(m) {
+  const o = m.enc && HC ? await HC.openDm(m) : { state: m.enc ? 'locked' : 'plain' };
+  const open = o.state === 'open';
+  return {
+    id: 'im' + m.id, imId: m.id, raw: m, created_at: toMs(m.sent_at || m.created_at), edited_at: m.edited_at ? toMs(m.edited_at) : null,
+    author: m.from_system ? null : { username: m.from }, system: !!m.from_system, reactions: m.reactions,
+    body: m.enc ? (open ? o.text : null) : m.body, sealed: m.enc ? o.state : null, encFiles: open ? o.files : [], dmSig: open ? o.signature : null, quote: open ? o.quote : null,
+    reply: m.reply ? { author: { username: m.reply.from }, body: m.reply.gone ? 'deleted message' : (open && o.quote?.s) || m.reply.body } : null,
+  };
+}
 function onHomeFrame(m) {
   switch (m.type) {
-    case 'auth_success': case 'ready': S.home.status = 'open'; S.home.retry = 0; renderStatus(); loadDMs(); return;
+    case 'auth_success': S.home.retry = 0; S.home.ws?.send(JSON.stringify({ type: 'chat_hello' })); return;
+    case 'chat_ready': case 'ready':
+      S.home.status = 'open'; S.home.retry = 0;
+      if (m.you?.username) { S.me = m.you.username; store.set(LS.user, S.me); if (m.you.presence) S.presence[S.me] = m.you.presence; }
+      renderStatus(); loadDMs(); rewatchPresence();
+      return;
+    case 'presence_bulk': for (const x of m.presences || []) S.presence[x.username] = x.presence; renderRight(); renderLeft(); return;
+    case 'presence_update': if (m.username) { S.presence[m.username] = m.presence; renderRight(); renderLeft(); } return;
+    case 'e2ee_keys_changed': if (m.username) HC?.forgetBundle(m.username); return;
+    case 'e2ee_link_request': sys('A device or app is asking to read your DMs. Approve it in the Ember app (Settings > Privacy) only if you started it.'); return;
     case 'auth_error': case 'auth_failed': signedOut('Your Nookara sign-in ended. Sign in again.'); return;
-    case 'im_received': case 'im_sent': {
+    case 'im_received': case 'im_sent': { (async () => {
       const msg = m.message; if (!msg) return;
       const other = m.type === 'im_sent' || msg.from === S.me ? msg.to : msg.from;
       const vk = `d|${String(other).toLowerCase()}`;
-      const nm = imToMsg(msg);
+      const nm = await imToMsg(msg);
       const n = m.nonce || msg.nonce;
       if (n && settleDm(n, nm)) return;
       pushMsg(vk, nm);
       if (m.type === 'im_received') { setTyping(vk, other, false); if (vkeyOf(S.view) !== vk || document.hidden) { S.unread[vk] = true; notify(other, nm.body || 'sent a message'); } else markDmRead(other); }
       loadDMs();
-      return;
-    }
-    case 'im_ack': { const nm = m.message ? imToMsg(m.message) : null; if (nm) settleDm(m.nonce, nm); return; }
+    })(); return; }
+    case 'im_ack': if (m.message) imToMsg(m.message).then(nm => settleDm(m.nonce, nm)); return;
     case 'im_error': { const p = dmAcks.get(m.nonce); if (p) { dmAcks.delete(m.nonce); updateMessage(p.vkey, p.id, x => ({ ...x, pending: false, failed: m.error })); } sys('DM failed: ' + (m.message || m.error), 'err'); return; }
     case 'im_deleted': { const u = String(m.with || '').toLowerCase(); removeMessage(`d|${u}`, 'im' + m.id); return; }
-    case 'im_edited': { const u = String(m.with || '').toLowerCase(); if (m.message) updateMessage(`d|${u}`, 'im' + m.message.id, () => imToMsg(m.message)); return; }
+    case 'im_edited': { const u = String(m.with || '').toLowerCase(); if (m.message) imToMsg(m.message).then(nm => updateMessage(`d|${u}`, nm.id, () => nm)); return; }
     case 'dm_typing': setTyping(`d|${String(m.from).toLowerCase()}`, m.from, m.typing !== false); return;
     case 'im_read_sync': if (m.with) { S.unread[`d|${String(m.with).toLowerCase()}`] = false; renderLeft(); } return;
     case 'friend_request': sys(`${m.from || 'Someone'} sent you a friend request. Accept it on nookara.cc.`); return;
@@ -328,6 +350,7 @@ async function loadDMs() {
   const d = await nk('/im/conversations').catch(() => null);
   if (!d) return;
   S.dms = (d.conversations || []).filter(c => c.username);
+  watchPresence(S.dms.map(c => c.username).filter(u => u !== 'System'));
   for (const c of S.dms) if (c.unread && vkeyOf(S.view) !== `d|${c.username.toLowerCase()}`) S.unread[`d|${c.username.toLowerCase()}`] = true;
   renderLeft();
 }
@@ -410,7 +433,7 @@ async function loadMessages(v, older = false) {
       list = d.messages || []; more = !!d.has_more;
     } else if (v.kind === 'dm') {
       const d = S.demo ? demoDm(v.user) : await nk(`/im/with/${encodeURIComponent(v.user)}?limit=50${first ? `&before=${encodeURIComponent(first.imId)}` : ''}`);
-      list = (d.messages || []).map(imToMsg); more = !!d.has_more;
+      list = await Promise.all((d.messages || []).map(imToMsg)); more = !!d.has_more;
     }
     b.list = sortList([...list, ...b.list]); b.hasMore = more; b.loaded = true;
   } catch (e) {
@@ -431,24 +454,63 @@ async function send(text) {
   if (S.demo) { setTimeout(() => updateMessage(vk, id, x => ({ ...x, id: 'demo' + n, pending: false })), 250); return; }
   if (v.kind === 'channel') {
     const c = S.insts.get(v.origin);
-    c.acks.set(n, { vkey: vk, id });
-    if (!sendInst(c, { type: 'chat_send', nonce: n, channel: v.cid, message: text, ...(reply ? { reply_to: reply.id } : {}) })) {
-      try { const r = await api(c, `/channels/${encodeURIComponent(v.cid)}/messages`, { method: 'POST', body: JSON.stringify({ message: text, ...(reply ? { reply_to: reply.id } : {}) }) }); settle(c, n, r.message || r); }
+    const body = text.replace(/\r\n/g, '\n');
+    const signature = await signFor(c, v, body, { reply_to: reply ? reply.id : null });
+    const frame = sig => ({ type: 'chat_send', nonce: n, channel: v.cid, message: body, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) });
+    // the server turned the signature down: once more without it (and say so)
+    const resend = signature ? () => { sys('This server did not accept the signature, so the message was sent unsigned.', 'err'); c.acks.set(n, { vkey: vk, id }); sendInst(c, frame(null)); } : null;
+    c.acks.set(n, { vkey: vk, id, resend });
+    if (!sendInst(c, frame(signature))) {
+      const post = sig => api(c, `/channels/${encodeURIComponent(v.cid)}/messages`, { method: 'POST', body: JSON.stringify({ message: body, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) }) });
+      try { const r = await post(signature).catch(e => (signature && SIGN_REFUSED.has(e.message) ? post(null) : Promise.reject(e))); settle(c, n, r.message || r); }
       catch (e) { c.acks.delete(n); updateMessage(vk, id, x => ({ ...x, pending: false, failed: e.message })); }
     }
   } else if (v.kind === 'dm') {
     dmAcks.set(n, { vkey: vk, id });
-    const frame = { type: 'im_send', to: v.user, message: text, nonce: n, ...(reply ? { reply_to: String(reply.id).replace(/^im/, '') } : {}) };
+    const replyTo = reply ? { reply_to: String(reply.id).replace(/^im/, '') } : {};
+    let frame;
+    try {
+      const quote = reply ? { from: reply.who, s: String(reply.text || '').slice(0, 200) } : null;
+      frame = { type: 'im_send', to: v.user, enc: await HC.sealDm(v.user, text, quote), nonce: n, ...replyTo };
+    } catch (e) {
+      if (e.message === 'no_keys') { frame = { type: 'im_send', to: v.user, message: text, nonce: n, ...replyTo }; sys(`${v.user} hasn't set up encrypted DMs, so this one went unencrypted.`); }
+      else {
+        dmAcks.delete(n);
+        updateMessage(vk, id, x => ({ ...x, pending: false, failed: e.message === 'e2ee_locked' ? 'unlock encrypted DMs first: /unlock' : e.message }));
+        if (e.message === 'e2ee_locked') e2eeHint();
+        return;
+      }
+    }
     if (S.home.ws?.readyState === 1) S.home.ws.send(JSON.stringify(frame));
     else { dmAcks.delete(n); updateMessage(vk, id, x => ({ ...x, pending: false, failed: 'offline' })); }
   }
+}
+const SIGN_REFUSED = new Set(['bad_signature', 'signing_unavailable']);
+// a signature for a message to an Ember server, when this account can sign there (null otherwise: it goes unsigned)
+async function signFor(c, v, body, { reply_to = null, edit_of = null } = {}) {
+  if (!HC?.canSign() || c.info?.accounts_mode !== 'velora' || !c.user?.velora_id) return null;
+  try { return await HC.signMessage({ instance: c.origin, community: v.sid, channel: v.cid, author: c.user.velora_id, body, attachments: [], reply_to, edit_of }, c.info); }
+  catch { return null; }
 }
 async function saveEdit(text) {
   const { id, vkey: vk } = S.editing; S.editing = null; setPromptLabel();
   const v = S.view;
   try {
-    if (v.kind === 'channel') await api(S.insts.get(v.origin), `/messages/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ message: text }) });
-    else if (v.kind === 'dm') await nk(`/im/${encodeURIComponent(String(id).replace(/^im/, ''))}`, { method: 'PATCH', body: JSON.stringify({ message: text }) });
+    if (v.kind === 'channel') {
+      const c = S.insts.get(v.origin), m = findMsg(id);
+      const reply_to = m?.reply_to && typeof m.reply_to === 'object' ? m.reply_to.id : (m?.reply_to ?? m?.reply?.id ?? null);
+      const sig = (m?.attachments || []).length ? null : await signFor(c, v, text, { reply_to, edit_of: id });
+      const patch = sg => api(c, `/messages/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ message: text, ...(sg ? { signature: sg } : {}) }) });
+      await patch(sig).catch(e => (sig && SIGN_REFUSED.has(e.message) ? patch(null) : Promise.reject(e)));
+    } else if (v.kind === 'dm') {
+      const m = findMsg(id), raw = m?.raw || {};
+      const path = `/im/${encodeURIComponent(String(id).replace(/^im/, ''))}/edit`;
+      if (!raw.enc) await nk(path, { method: 'PATCH', body: JSON.stringify({ body: text }) });
+      else {
+        const wire = [text, ...(m.encFiles || [])].filter(Boolean).join('\n');
+        await nk(path, { method: 'PATCH', body: JSON.stringify({ enc: await HC.sealEdit({ id: raw.id, from_id: raw.from_id, to_id: raw.to_id, quote: m.quote }, v.user, wire) }) });
+      }
+    }
     updateMessage(vk, id, x => ({ ...x, body: text, edited_at: Date.now() }));
   } catch (e) { sys('edit failed: ' + e.message, 'err'); }
 }
@@ -500,7 +562,7 @@ function go(v, { save = true } = {}) {
     const c = S.insts.get(v.origin);
     if (c && !S.members[skey(v.origin, v.sid)]) loadMembers(c, v.sid).catch(() => {});
     loadMessages(v).then(() => { const b = S.msgs[vk]; const last = b?.list.filter(x => !x.pending).pop(); if (last) sendInst(c, { type: 'chat_read', channel: v.cid, message_id: last.id }); });
-  } else if (v.kind === 'dm') { loadMessages(v); if (!S.demo) markDmRead(v.user); }
+  } else if (v.kind === 'dm') { loadMessages(v); if (!S.demo) { markDmRead(v.user); if (HC.status() !== 'ready' && HC.status() !== 'loading') e2eeHint(); } }
   render();
   $('input').focus({ preventScroll: true });
 }
@@ -542,11 +604,24 @@ function renderStatus() {
   $('st-count').textContent = count;
   const anyOpen = [...S.insts.values()].some(c => c.status === 'open') || S.home.status === 'open' || S.demo;
   const me = $('st-me');
-  me.textContent = S.me ? `${S.me} · ${S.demo ? 'demo' : anyOpen ? 'connected' : 'connecting'}` : 'offline';
+  const lock = !S.demo && HC?.status() === 'ready' ? ' 🔒' : '';
+  me.textContent = S.me ? `${S.me}${lock} · ${S.demo ? 'demo' : anyOpen ? 'connected' : 'connecting'}` : (S.token ? 'connecting' : 'offline');
   me.classList.toggle('off', !anyOpen);
   document.title = (Object.values(S.unread).some(Boolean) ? '* ' : '') + (channel ? channel + ' · ' : '') + 'Hammi Chat';
 }
-const isOnline = m => m.online === true || ['online', 'idle', 'dnd'].includes(m.presence?.status || m.status);
+const presenceOf = name => { const p = S.presence[name]; return p && p.chat === false ? null : p; };
+const isOnline = m => m.online === true || ['online', 'idle', 'dnd'].includes(presenceOf(m.username)?.status || m.presence?.status || m.status);
+const watched = new Set();
+function watchPresence(names) {
+  const fresh = [...new Set(names.filter(Boolean))].filter(n => !watched.has(n));
+  fresh.forEach(n => watched.add(n));
+  if (S.home.ws?.readyState !== 1) return;
+  for (let i = 0; i < fresh.length; i += 200) S.home.ws.send(JSON.stringify({ type: 'chat_presence_watch', usernames: fresh.slice(i, i + 200) }));
+}
+function rewatchPresence() {
+  const names = [...watched, ...S.dms.map(d => d.username)].filter(n => n && n !== S.me);
+  watched.clear(); watchPresence(names);
+}
 
 function renderLeft() {
   const out = [];
@@ -581,7 +656,7 @@ function renderLeft() {
   if (!S.dms.length) out.push(`<div class="empty">no DMs yet: /dm &lt;name&gt;</div>`);
   for (const d of S.dms.slice(0, 40)) {
     const vk = `d|${d.username.toLowerCase()}`, on = vkeyOf(S.view) === vk;
-    out.push(`<button class="ln ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}">${d.online ? '●' : '○'} ${esc(d.username)}${S.unread[vk] && !on ? ' <span class="n">*</span>' : ''}</button>`);
+    out.push(`<button class="ln ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}">${isOnline(d) ? '●' : '○'} ${esc(d.username)}${S.unread[vk] && !on ? ' <span class="n">*</span>' : ''}</button>`);
   }
   $('left').innerHTML = out.join('');
   renderStatus();
@@ -603,15 +678,42 @@ function renderRight() {
     }
   } else if (v.kind === 'dm') {
     out.push(`<div class="h">TALKING TO</div><div class="ln" style="color:${nameColor(v.user)}">${esc(v.user)}</div>`);
-    out.push(`<div class="h">NOTE</div><div class="empty" style="white-space:normal">Encrypted DMs from the full Ember app show as [sealed]. Messages you send here are not end-to-end encrypted.</div>`);
+    const st = HC?.status();
+    out.push(`<div class="h">ENCRYPTION</div><div class="empty" style="white-space:normal">${st === 'ready' ? '🔒 DMs are end-to-end encrypted on this device.' : st === 'locked' ? 'Locked here. Type /unlock to read encrypted DMs.' : st === 'none' ? 'Not set up yet. Type /unlock to set up encrypted DMs.' : 'checking...'}</div>`);
   } else out.push('<div class="h">MEMBERS</div><div class="empty">pick a channel</div>');
   $('right').innerHTML = out.join('');
 }
 
 // message text: escaped, then links, @mentions and `code`
-function fmt(body, myNames) {
+// UTF-8 file names that were read as Latin-1 somewhere on the way ("â¯" for a narrow space): put them back
+const fixName = n => { const t = String(n || ''); if (!/[\u00c2-\u00f4][\u0080-\u00bf]/.test(t)) return t; try { return decodeURIComponent(escape(t)); } catch { return t; } };
+const emojiSrc = (eid, animated, origin) => S.emojiUrls[eid] || `${NOOKARA}/uploads/emojis/${eid}.${animated ? 'gif' : 'png'}`;
+// who <@v:223> / <@123> is: the server's member list first, then anyone seen in this conversation
+function personById(id, ctx) {
+  const mem = ctx?.sid ? S.members[skey(ctx.origin, ctx.sid)] : null;
+  const u = mem?.find(x => String(x.id) === id || (/^\d+$/.test(id) && String(x.velora_id) === id) || (/^v:\d+$/.test(id) && String(x.velora_id) === id.slice(2)));
+  return u ? (u.nick || u.display_name || u.username) : null;
+}
+function channelByCid(cid, ctx) {
+  for (const [k, d] of Object.entries(S.detail)) if (!ctx?.origin || k.startsWith(ctx.origin + '|')) { const ch = d.channels.find(x => x.cid === cid); if (ch) return { ch, sid: k.split('|').pop(), origin: k.slice(0, k.lastIndexOf('|')) }; }
+  return null;
+}
+function stamp(sec, style) {
+  const d = new Date(Number(sec) * 1000);
+  if (Number.isNaN(d.getTime())) return null;
+  if (style === 'R') { const diff = (d - Date.now()) / 1000, a = Math.abs(diff); const [n, u] = a < 60 ? [diff, 'second'] : a < 3600 ? [diff / 60, 'minute'] : a < 86400 ? [diff / 3600, 'hour'] : [diff / 86400, 'day']; return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(Math.round(n), u); }
+  const o = { t: { timeStyle: 'short' }, T: { timeStyle: 'medium' }, d: { dateStyle: 'short' }, D: { dateStyle: 'long' }, f: { dateStyle: 'long', timeStyle: 'short' }, F: { dateStyle: 'full', timeStyle: 'short' } };
+  return new Intl.DateTimeFormat(undefined, o[style] || o.f).format(d);
+}
+function fmt(body, myNames, ctx) {
   let s = esc(body);
   s = s.replace(/`([^`\n]{1,400})`/g, '<span class="code">$1</span>');
+  // custom emoji <:name:eid> / <a:name:eid>: Nookara's copy first, the server's own if that fails
+  s = s.replace(/&lt;(a?):([A-Za-z0-9_]{1,32}):(e[0-9a-f]{10})&gt;/g, (all, a, name, eid) => `<img class="emo" src="${esc(emojiSrc(eid, a, ctx?.origin))}" alt=":${name}:" title=":${name}:" data-alt="${ctx?.origin ? esc(`${ctx.origin}/uploads/emojis/${eid}.${a ? 'gif' : 'png'}`) : ''}" onerror="this.dataset.alt?(this.src=this.dataset.alt,this.dataset.alt=''):this.replaceWith(this.alt)">`);
+  s = s.replace(/&lt;@!?((?:[vlb]:)?\d{1,20})&gt;/g, (all, id) => { const n = personById(id, ctx); return n ? `<span class="${myNames.includes(n.toLowerCase()) ? 'mention-tx' : 're'}">@${esc(n)}</span>` : '<span class="re">@unknown</span>'; });
+  s = s.replace(/&lt;@&amp;(r[0-9a-f]{10})&gt;/g, (all, rid) => { const r = (S.detail[skey(ctx?.origin, ctx?.sid)]?.roles || []).find(x => x.rid === rid); return `<span class="re">@${esc(r?.name || 'role')}</span>`; });
+  s = s.replace(/&lt;#(c[0-9a-f]{10})&gt;/g, (all, cid) => { const f = channelByCid(cid, ctx); return f ? `<button class="chlink" data-act="channel" data-o="${esc(f.origin)}" data-s="${esc(f.sid)}" data-c="${esc(cid)}">#${esc(f.ch.name)}</button>` : '<span class="re">#unknown</span>'; });
+  s = s.replace(/&lt;t:(-?\d{1,13})(?::([tTdDfFR]))?&gt;/g, (all, t, st) => { const x = stamp(t, st || 'f'); return x ? `<span class="code" title="${esc(new Date(t * 1000).toLocaleString())}">${esc(x)}</span>` : all; });
   s = s.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,:;!?)\]'"]/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
   s = s.replace(/(^|[\s(])@([A-Za-z0-9_.-]{2,32})/g, (all, pre, n) => `${pre}<span class="${myNames.includes(n.toLowerCase()) ? 'mention-tx' : 're'}">@${n}</span>`);
   return s;
@@ -649,12 +751,30 @@ function renderLog(stick) {
     let tx = '';
     const rp = m.reply || (m.reply_to && typeof m.reply_to === 'object' ? m.reply_to : null);
     if (rp) tx += `<span class="rp">↱ ${esc(rp.author?.username || rp.username || '?')}: ${esc(String(rp.body || rp.message || '').slice(0, 140))}</span>`;
-    tx += m.sealed && m.body == null ? '<span class="rx">[sealed: an encrypted DM, open it in the Ember app]</span>' : fmt(m.body || '', myNames);
+    const ctx = S.view.kind === 'channel' ? { origin: S.view.origin, sid: S.view.sid } : null;
+    if (m.sealed === 'locked') tx += '<span class="rx">[locked: an encrypted DM. Type /unlock to read your DMs here]</span>';
+    else if (m.sealed === 'failed') tx += '<span class="rx">[encrypted for a key this device doesn\'t have]</span>';
+    else tx += fmt(m.body || '', myNames, ctx);
+    for (const link of m.encFiles || []) {
+      const f = HC.parseFileLink(link); if (!f) continue;
+      const img = /^image\//.test(f.mime || '');
+      tx += `<button class="att efile" data-act="efile" data-link="${esc(link)}" data-img="${img ? 1 : ''}">[${img ? 'image' : 'file'}, encrypted] ${esc(fixName(f.name))}</button>`;
+    }
+    if (m.dmSig === 'valid') tx += ' <span class="sig ok" title="Encrypted, and signed by their key">🔒</span>';
+    else if (m.dmSig === 'invalid') tx += ' <span class="sig bad" title="The signature on this encrypted message does not match the sender\'s key">[signature mismatch]</span>';
+    else if (m.sealed === 'open') tx += ' <span class="sig" title="Encrypted">🔒</span>';
+    if (m.signature && S.view.kind === 'channel') {
+      const sk = `${S.view.origin}|${m.id}|${m.signature.sig}`, vd = S.sigs[sk];
+      if (vd === 'ok') tx += ' <span class="sig ok" title="Signed: it really came from this Nookara account">✓</span>';
+      else if (vd === 'bad') tx += ' <span class="sig bad" title="This message\'s signature does not check out. It may have been changed or faked.">[bad signature]</span>';
+      else if (vd === undefined) { S.sigs[sk] = null; const c = S.insts.get(S.view.origin); HC.checkMessage({ ...m, origin: S.view.origin }, c?.info).then(r => { S.sigs[sk] = r || 'none'; if (r) renderLog(); }); }
+    }
     if (m.edited_at) tx += ' <span class="ed">(edited)</span>';
     for (const a of m.attachments || []) {
       const url = typeof a === 'string' ? a : a.url;
       if (!url || !/^https?:\/\//i.test(url)) continue;
-      const name = a.name || a.filename || url.split('/').pop().split('?')[0];
+      let name = a.name || a.filename; if (!name) { name = url.split('/').pop().split('?')[0] || 'file'; try { name = decodeURIComponent(name); } catch { /* keep */ } }
+      name = fixName(name);
       tx += isImage(a) ? `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(name)}" loading="lazy">${esc(name)} ${size(a.size)}</a>` : `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer">[file] ${esc(name)} ${size(a.size)}</a>`;
     }
     if (m.reactions?.length) tx += ' <span class="rx">' + m.reactions.map(r => `${r.me ? '<b>' : ''}${esc(r.emoji?.name || r.emoji)}${r.count ?? (r.users || []).length}${r.me ? '</b>' : ''}`).join(' ') + '</span>';
@@ -697,6 +817,8 @@ const HELP = [
   '/me <action> ......... say something in third person',
   '/shrug [text] ........ ¯\\_(ツ)_/¯',
   '/reload .............. reload this channel',
+  '/unlock .............. read your encrypted DMs on this device',
+  '/lock ................ forget your DM keys on this device',
   '/logout .............. sign out of Nookara on this device',
   'Ctrl+K jumps anywhere, Alt+↑/↓ moves between channels, ↑ in an empty box edits your last message, Shift+Enter makes a new line.',
 ];
@@ -728,6 +850,8 @@ async function command(raw) {
     case 'shrug': send(`${arg ? arg + ' ' : ''}¯\\_(ツ)_/¯`); return;
     case 'reload': if (S.view.kind !== 'home') { S.msgs[vkeyOf(S.view)] = null; loadMessages(S.view); } return;
     case 'logout': case 'signout': signOut(); return;
+    case 'unlock': case 'e2ee': case 'keys': openKeys(); return;
+    case 'lock': await HC.forget(); sys('Encrypted DMs are locked again on this device.'); return;
     case 'clear': sysLines = sysLines.filter(x => x.view !== vkeyOf(S.view)); renderLog(true); return;
     default: sys(`unknown command /${cmd}. Try /help.`, 'err');
   }
@@ -759,6 +883,77 @@ async function joinInvite(arg) {
   for (let i = 0; i < 20 && !c.session; i++) await sleep(300);
   try { await api(c, `/join/${encodeURIComponent(code)}`, { method: 'POST' }); sys('joined! loading channels...'); await loadServers(c); }
   catch (e) { sys('join failed: ' + (e.data?.message || e.message), 'err'); }
+}
+
+// ───────────────────────── encrypted DM keys (/unlock) ─────────────────────────
+let hinted = false;
+function e2eeHint() {
+  if (hinted || S.demo) return; hinted = true;
+  const st = HC.status();
+  if (st === 'locked') sys('Your encrypted DMs are locked on this device. Type /unlock to read them.');
+  else if (st === 'none') sys('You have not set up encrypted DMs yet. Type /unlock to set them up.');
+}
+let linkReq = null;
+function openKeys(note = '') {
+  const st = HC.status(), box = $('keys-body');
+  const t = HC.passcodeType();
+  let html = `<div class="h">ENCRYPTED DMS</div>`;
+  if (note) html += `<p class="${/fail|wrong|error|denied|expired/i.test(note) ? 'bad' : 'ok'}">${esc(note)}</p>`;
+  if (st === 'ready') html += `<p>Unlocked on this device. Your DMs are end-to-end encrypted: Nookara only ever sees scrambled text.</p><div class="login-actions"><button class="kbtn" data-act="e2ee-close">Done</button></div>`;
+  else if (st === 'locked') html += `<p>Your DMs are encrypted. To read them here, unlock with the ${t === 'pin' ? 'PIN' : 'password'} you chose in the Ember app, your recovery code, or approve this browser from another device.</p>
+    <label>${t === 'pin' ? 'PIN' : 'Password'}<input id="k-pass" type="password" autocomplete="off" ${t === 'pin' ? 'inputmode="numeric"' : ''}></label>
+    <div class="login-actions"><button class="kbtn" data-act="e2ee-pass">Unlock</button></div>
+    ${HC.hasRecovery() ? `<label>Recovery code<input id="k-rec" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XX"></label><div class="login-actions"><button class="kbtn alt" data-act="e2ee-rec">Use recovery code</button></div>` : ''}
+    <div class="login-actions"><button class="kbtn alt" data-act="e2ee-link">Approve from another device</button><button class="kbtn alt" data-act="e2ee-close">Later</button></div>
+    <div id="k-link"></div>`;
+  else if (st === 'none') html += `<p>Encrypted DMs are not set up for your account yet. Pick a PIN (6+ digits) or password (10+ characters). It locks a backup of your keys on Nookara, so you can read your DMs on other devices.</p>
+    <label>PIN or password<input id="k-new" type="password" autocomplete="new-password"></label><label>Type it again<input id="k-new2" type="password" autocomplete="new-password"></label>
+    <div class="login-actions"><button class="kbtn" data-act="e2ee-setup">Set up</button><button class="kbtn alt" data-act="e2ee-close">Later</button></div>`;
+  else html += `<p>Still checking your keys with Nookara...</p><div class="login-actions"><button class="kbtn alt" data-act="e2ee-close">Close</button></div>`;
+  box.innerHTML = html;
+  $('keydlg').hidden = false;
+  box.querySelector('input')?.focus();
+}
+function closeKeys() { linkReq?.cancel(); linkReq = null; $('keydlg').hidden = true; $('input').focus(); }
+const E2EE_ERR = { wrong_passcode: 'That PIN or password is wrong.', invalid_auth: 'That did not match.', rate_limited: 'Too many tries. Wait a bit and try again.', locked_out: 'Too many wrong tries. Wait a while, or use your recovery code.', argon2_unreachable: 'Could not load the unlock code. Check your connection.', link_denied: 'The other device said no.', link_expired: 'That request expired. Try again.', link_mismatch: 'Nookara handed back a different key than this browser made, so this was stopped.' };
+async function unlockWith(kind) {
+  const val = id => ($(id)?.value || '').trim();
+  try {
+    if (kind === 'pass') { if (!val('k-pass')) return; openKeys('Unlocking... (this takes a few seconds)'); await HC.unlockPasscode($('k-pass')?.value || val('k-pass')); }
+    else if (kind === 'rec') { const v = val('k-rec'); if (!v) return; openKeys('Unlocking...'); await HC.unlockRecovery(v); }
+    else if (kind === 'setup') {
+      const a = $('k-new').value, b2 = $('k-new2').value;
+      const type = /^\d+$/.test(a) ? 'pin' : 'password';
+      if (a !== b2) { openKeys('Those two did not match.'); return; }
+      if (type === 'pin' ? a.length < 6 : a.length < 10) { openKeys('Use a PIN of 6+ digits or a password of 10+ characters.'); return; }
+      openKeys('Setting up... (this takes a few seconds)');
+      const code = await HC.setup(type, a);
+      $('keys-body').innerHTML = `<div class="h">SAVE YOUR RECOVERY CODE</div><p>If you forget your ${type === 'pin' ? 'PIN' : 'password'}, this is the only other way to read your DMs. Write it down somewhere safe. It is shown only once.</p><pre class="code big">${esc(code)}</pre><div class="login-actions"><button class="kbtn" data-act="e2ee-close">I saved it</button></div>`;
+      afterUnlock(); return;
+    } else if (kind === 'link') {
+      linkReq?.cancel();
+      linkReq = await HC.startLink('Hammi Chat on ' + (navigator.userAgentData?.platform || navigator.platform || 'a browser'));
+      $('k-link').innerHTML = `<p>On a device where your DMs are already unlocked, open the Ember app, go to Settings > Privacy and enter this code:</p><pre class="code big">${esc(linkReq.code)}</pre><p class="fine">Waiting for approval... It expires in 10 minutes.</p>`;
+      await linkReq.wait;
+    }
+    afterUnlock(); openKeys('Unlocked! Your encrypted DMs can be read here now.');
+  } catch (e) { openKeys(E2EE_ERR[e.message] || E2EE_ERR[e.data?.error] || 'That did not work: ' + e.message); }
+}
+function afterUnlock() {
+  for (const k of Object.keys(S.msgs)) if (k.startsWith('d|')) S.msgs[k] = null;
+  if (S.view.kind === 'dm') loadMessages(S.view);
+  loadDMs();
+}
+$('keydlg').addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeKeys();
+  if (e.key === 'Enter' && e.target.id === 'k-pass') unlockWith('pass');
+  if (e.key === 'Enter' && e.target.id === 'k-rec') unlockWith('rec');
+});
+
+// custom emoji: the lists from Nookara and every connected server, for their picture addresses
+async function loadEmojis() {
+  const lists = await Promise.all([nk('/chat/emojis').catch(() => null), ...[...S.insts.values()].filter(c => c.status === 'open').map(c => api(c, '/emojis').catch(() => null))]);
+  for (const d of lists) for (const sv of d?.servers || []) for (const e of sv.emojis || []) if (e.url && !S.emojiUrls[e.eid]) S.emojiUrls[e.eid] = e.url;
 }
 
 // ───────────────────────── jump (Ctrl+K) ─────────────────────────
@@ -838,6 +1033,18 @@ document.addEventListener('click', e => {
   else if (a === 'reply') { const m = findMsg(b.dataset.id); if (m) setReply({ id: m.id, who: m.author?.username || '?', text: m.body || '' }); }
   else if (a === 'edit') { const m = findMsg(b.dataset.id); if (m) { S.editing = { id: m.id, vkey: vkeyOf(S.view) }; input.value = m.body || ''; setPromptLabel(); autosize(); input.focus(); } }
   else if (a === 'del') deleteMsg(b.dataset.id);
+  else if (a === 'efile') {
+    b.disabled = true; b.textContent += ' (opening...)';
+    HC.openFile(b.dataset.link).then(url => {
+      if (b.dataset.img) { const img = document.createElement('img'); img.src = url; img.alt = ''; b.replaceWith(Object.assign(document.createElement('a'), { href: url, target: '_blank', className: 'att' }), img); img.previousSibling.textContent = 'open full size'; }
+      else { window.open(url, '_blank'); b.textContent = b.textContent.replace(' (opening...)', ''); b.disabled = false; }
+    }, e => { b.textContent = b.textContent.replace(' (opening...)', ` (${e.message === 'gone' ? 'deleted' : 'could not open'})`); });
+  }
+  else if (a === 'e2ee-pass') unlockWith('pass');
+  else if (a === 'e2ee-rec') unlockWith('rec');
+  else if (a === 'e2ee-link') unlockWith('link');
+  else if (a === 'e2ee-setup') unlockWith('setup');
+  else if (a === 'e2ee-close') closeKeys();
   else if (a === 'react') { const em = prompt('React with which emoji?', '👍'); if (em) react(b.dataset.id, em.trim()); }
 });
 // remember the last channel per server
@@ -881,10 +1088,16 @@ addEventListener('online', () => { for (const c of S.insts.values()) if (!c.ws) 
 async function start() {
   $('login').hidden = true;
   try {
-    const d = await nk('/bonfire/session').catch(() => nk('/account/me'));
+    const d = await nk('/bonfire/session');
+    S.session = d;
     S.me = d.username || d.user?.username || d.account?.username || S.me;
-    store.set(LS.user, S.me);
   } catch (e) { if (!S.token) return; }
+  if (!S.me) { const a = await nk('/account/me').catch(() => null); S.me = a?.username || a?.account?.username || a?.user?.username || S.me; }
+  store.set(LS.user, S.me);
+  HC.use(nk);
+  HC.onChange(st => { renderStatus(); if (st === 'locked' || st === 'none') { if (S.view.kind === 'dm') e2eeHint(); } });
+  HC.init().then(st => { if (st === 'ready') afterUnlock(); });
+  HC.setupSigning(S.session).then(st => { if (st === 'no_scope') sys('Message signing is off: sign out and back in to give Hammi Chat the new "Sign Messages" permission.'); else if (st === 'unsupported') sys('This browser cannot sign messages (no Ed25519). Messages go out unsigned.'); });
   render();
   openHome();
   loadDMs();
