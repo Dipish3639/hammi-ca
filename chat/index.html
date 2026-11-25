@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hammi Chat</title>
+<meta name="description" content="Hammi Chat, a glowing CRT-style chat client for Ember servers, signed in with Nookara.">
+<meta name="theme-color" content="#05040b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%2305040b'/%3E%3Cpath fill='%23ff2e88' d='M1 1h6v1H1zM1 3h4v1H1zM1 5h6v1H1z'/%3E%3Cpath fill='%232ee6ff' d='M6 3h1v1H6z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="crt" aria-hidden="true"></div>
+<div class="screen">
+  <div class="frame" id="frame">
+    <header class="status" id="status">
+      <button class="t" id="btn-left" title="Servers and channels">HAMMI CHAT</button>
+      <span id="st-server">not connected</span>
+      <span id="st-channel"></span>
+      <span id="st-count" class="opt"></span>
+      <button class="r" id="st-me" title="Account">offline</button>
+      <button class="mem-btn" id="btn-right" title="Members">☰</button>
+    </header>
+
+    <main class="body" id="body">
+      <nav class="col left" id="left" aria-label="Servers, channels and messages"></nav>
+      <section class="center">
+        <div class="log" id="log" role="log" aria-live="polite"></div>
+      </section>
+      <aside class="col right" id="right" aria-label="Members"></aside>
+    </main>
+
+    <footer>
+      <div class="typing" id="typing"></div>
+      <div class="replybar" id="replybar" hidden></div>
+      <form class="prompt" id="prompt" autocomplete="off">
+        <label for="input" id="prompt-label">[hammi]</label>
+        <textarea id="input" rows="1" spellcheck="true" placeholder="type /help for commands"></textarea>
+        <button type="submit" class="send" aria-label="Send">⏎</button>
+      </form>
+      <div class="keys" id="keys">
+        <span><b>Ctrl+K</b> jump to</span><span><b>Alt+↑↓</b> channels</span><span><b>↑</b> edit last</span><span><b>/help</b> commands</span><span><b>Esc</b> cancel</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div class="overlay" id="jump" hidden>
+  <div class="box">
+    <div class="h">JUMP TO</div>
+    <input id="jump-input" placeholder="channel, server or person" autocomplete="off">
+    <div id="jump-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="login" hidden>
+  <div class="box boot">
+    <div class="logo">HAMMI CHAT</div>
+    <div class="h">chat for Ember servers · on hammi.ca</div>
+    <div id="boot-lines"></div>
+    <div class="login-actions">
+      <button class="kbtn" id="signin">Sign in with Nookara</button>
+      <button class="kbtn alt" id="demo">Look around (demo)</button>
+    </div>
+    <p class="fine">Ember is an open chat protocol. Hammi Chat is its own client, not made by Nookara. It runs entirely in your browser and only talks to Nookara and the Ember servers you join. Your sign-in stays on this device.</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
