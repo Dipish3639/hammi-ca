@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.4' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.5' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -679,7 +679,7 @@ function renderLeft() {
   if (!S.dms.length) out.push(`<div class="empty">No DMs yet. Type /dm &lt;name&gt;.</div>`);
   for (const d of S.dms.slice(0, 40)) {
     const vk = `d|${d.username.toLowerCase()}`, on = vkeyOf(S.view) === vk;
-    out.push(`<button class="row ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}"><span class="led${isOnline(d) ? ' on blue' : ''}"></span><span class="nm">${esc(d.username)}</span>${S.unread[vk] && !on ? '<span class="men">●</span>' : ''}</button>`);
+    out.push(`<button class="row ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}" title="${esc(d.username)} is ${isOnline(d) ? 'online' : 'offline'}"><span class="led${isOnline(d) ? ' on blue' : ''}"></span><span class="nm">${esc(d.username)}</span>${S.unread[vk] && !on ? '<span class="men">●</span>' : ''}</button>`);
   }
   $('rail').innerHTML = keys.join('');
   $('left').innerHTML = `<div class="mrail">${keys.join('')}</div>` + out.join('');
