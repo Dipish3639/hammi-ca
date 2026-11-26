@@ -4,52 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hammi Chat</title>
-<meta name="description" content="Hammi Chat, a calm, keyboard-friendly chat client for Ember servers, signed in with Nookara.">
-<meta name="theme-color" content="#0c0b10">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230c0b10'/%3E%3Cpath fill='%23ff2e88' d='M1 1h6v1H1zM1 3h4v1H1zM1 5h6v1H1z'/%3E%3Cpath fill='%232ee6ff' d='M6 3h1v1H6z'/%3E%3C/svg%3E">
+<meta name="description" content="Hammi Chat, a chat client for Ember servers, signed in with Nookara.">
+<meta name="theme-color" content="#dcdcd9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a1b" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/img/logo/hammi-icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css">
+<script>try{var t=JSON.parse(localStorage.getItem("hammichat_settings")||"{}").theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
-<div class="screen">
-  <div class="frame" id="frame">
-    <header class="status" id="status">
-      <button class="t" id="btn-left" title="Servers and channels"><b>●</b>hammi chat</button>
-      <span id="st-server">not connected</span>
-      <span id="st-channel"></span>
-      <span id="st-count" class="opt"></span>
-      <button class="r" id="st-me" title="Account">offline</button>
-      <button class="mem-btn" id="btn-right" title="Members">☰</button>
-    </header>
+<div class="backdrop" aria-hidden="true">
+  <div class="ruler"></div><div class="ruler v"></div>
+  <svg class="big" viewBox="0 0 100 100"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><circle cx="50" cy="50" r="9" fill="none" stroke="currentColor" stroke-width=".4"/><path d="M50 30v40M30 50h40" stroke="currentColor" stroke-width=".15" stroke-dasharray="1 1"/></svg>
+  <span class="cross" style="left:18px;bottom:18px"></span><span class="cross" style="right:18px;bottom:18px"></span>
+  <span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · hc-1</span>
+  <span class="dimline" style="left:50%;bottom:22px;transform:translateX(-50%)">ø 24 · grid</span>
+</div>
+<div class="app" id="app">
+  <header class="top">
+    <button class="k black phone" id="btn-left" title="Servers and channels">≡</button>
+    <div class="brand"><a class="word" href="/" title="hammi.ca"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="#ff5a1f"/></svg>hammi chat</a><span class="spec" id="spec"><b>hc-1</b> · multi-server chat</span></div>
+    <div class="tiers">
+      <div class="tier opt"><span class="led" id="dm-led"></span><button class="k2 k" id="btn-dms" title="Encrypted DMs"><span class="t">dms</span><span class="b" id="dm-state">…</span></button></div>
+      <div class="tier"><span class="led" id="set-led"></span><button class="k2 k" id="btn-settings" aria-expanded="false" title="Settings"><span class="t">settings</span><span class="b">system</span></button></div>
+      <div class="tier opt"><span class="led" id="me-led"></span><button class="k2 k" id="st-me" title="Account"><span class="t" id="me-name">sign in</span><span class="b" id="me-state">offline</span></button></div>
+    </div>
+    <button class="k black phone" id="btn-right" title="Members">☰</button>
+  </header>
 
-    <main class="body" id="body">
-      <nav class="col left" id="left" aria-label="Servers, channels and messages"></nav>
-      <section class="center">
-        <div class="log" id="log" role="log" aria-live="polite"></div>
-      </section>
-      <aside class="col right" id="right" aria-label="Members"></aside>
-    </main>
-
-    <footer>
+  <main class="grid" id="body">
+    <div class="railwrap"><span class="br"><span class="vlabel">servers</span></span><nav class="rail" id="rail" aria-label="Servers"></nav></div>
+    <nav class="col left" id="left" aria-label="Channels and messages"></nav>
+    <section class="display">
+      <div class="dh"><span class="ch" id="st-channel"></span><span class="tp" id="st-server">not connected</span>
+        <div class="seg"><span class="lit" id="st-sign"></span><span class="bl" id="st-e2ee"></span><span id="st-count"></span><span class="clock" id="clock">--:--</span></div></div>
+      <div class="log" id="log" role="log" aria-live="polite"></div>
       <div class="typing" id="typing"></div>
       <div class="replybar" id="replybar" hidden></div>
-      <form class="prompt" id="prompt" autocomplete="off">
-        <label for="input" id="prompt-label">hammi</label>
-        <textarea id="input" rows="1" spellcheck="true" placeholder="Message · /help for commands"></textarea>
-        <button type="submit" class="send" aria-label="Send">⏎</button>
-      </form>
-      <div class="keys" id="keys">
-        <span><b>Ctrl K</b> jump</span><span><b>Alt ↑↓</b> channels</span><span><b>↑</b> edit last</span><span><b>/help</b> commands</span><span><b>Esc</b> cancel</span><span class="kr">Enter to send · Shift+Enter new line</span>
-      </div>
-    </footer>
-  </div>
+    </section>
+    <aside class="col right" id="right" aria-label="Members"></aside>
+  </main>
+
+  <footer class="bottom">
+    <div class="sp0"></div>
+    <div class="sp keyhints" id="keys"><span><b>ctrl k</b> jump</span><span><b>alt ↑↓</b> channels</span><span><b>↑</b> edit last</span><span><b>/help</b> commands</span></div>
+    <form class="prompt" id="prompt" autocomplete="off">
+      <label class="slot" for="input"><span class="lb" id="prompt-label">hammi</span><textarea id="input" rows="1" spellcheck="true" placeholder="message · /help for commands"></textarea></label>
+      <button type="submit" class="k orange send" aria-label="Send">send</button>
+    </form>
+    <div class="sp"></div>
+  </footer>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-label="Settings">
+  <h4><span>settings</span><b>system</b></h4>
+  <div class="set"><span>Mode</span><div class="opts" data-set="theme"><div class="sk"><span class="led"></span><button class="k grey" data-v="light">light</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="dark">dark</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="auto">auto</button></div></div></div>
+  <div class="set"><span>Accent<small>key and light colour</small></span><div class="opts" data-set="accent"><div class="sk"><span class="led"></span><button class="k orange" data-v="orange">orng</button></div><div class="sk"><span class="led"></span><button class="k black blu" data-v="blue">blue</button></div></div></div>
+  <div class="set"><span>Text size<small id="fs-val">14 px</small></span><input class="fader" id="fs" type="range" min="12" max="18" step="1" value="14" aria-label="Text size"></div>
+  <div class="set"><span>Timestamps</span><div class="sk"><span class="led"></span><button class="k black" data-tog="ts">ts</button></div></div>
+  <div class="set"><span>Compact lines</span><div class="sk"><span class="led"></span><button class="k black" data-tog="compact">cmp</button></div></div>
+  <div class="set"><span>Key clicks<small>sound when you press keys</small></span><div class="sk"><span class="led"></span><button class="k black" data-tog="click">clk</button></div></div>
+  <div class="set"><span>Unread lights blink</span><div class="sk"><span class="led"></span><button class="k black" data-tog="blink">blk</button></div></div>
+  <div class="set"><span>Sign my messages<small>prove they came from you</small></span><div class="sk"><span class="led"></span><button class="k black" data-tog="sign">sig</button></div></div>
+  <div class="set"><span>Desktop notifications<small>mentions and DMs</small></span><div class="sk"><span class="led"></span><button class="k black" data-tog="notify">ntf</button></div></div>
 </div>
 
 <div class="overlay" id="jump" hidden>
   <div class="box">
-    <div class="h">Jump to</div>
+    <h4 class="boxh"><span>jump to</span><b>ctrl k</b></h4>
     <input id="jump-input" placeholder="channel, server or person" autocomplete="off">
     <div id="jump-list"></div>
   </div>
@@ -57,12 +81,12 @@
 
 <div class="overlay" id="login" hidden>
   <div class="box boot">
-    <div class="logo"><b>●</b>hammi chat</div>
+    <div class="word big"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="#ff5a1f"/></svg>hammi chat</div>
     <div class="sub">Chat for Ember servers, from hammi.ca</div>
     <div id="boot-lines"></div>
     <div class="login-actions">
-      <button class="kbtn" id="signin">Sign in with Nookara</button>
-      <button class="kbtn alt" id="demo">Look around (demo)</button>
+      <button class="k orange kbtn" id="signin">sign in with nookara</button>
+      <button class="k grey kbtn" id="demo">look around (demo)</button>
     </div>
     <p class="fine">Ember is an open chat protocol. Hammi Chat is its own client, not made by Nookara. It runs entirely in your browser and only talks to Nookara and the Ember servers you join. Your sign-in stays on this device.</p>
   </div>

@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.2.0' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.0' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -17,6 +17,7 @@ const store = {
   get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
+const SET = Object.assign({ theme: 'auto', accent: 'orange', fs: 14, ts: true, compact: false, click: false, blink: true, sign: true, notify: false }, store.get('hammichat_settings', {}));
 const COLORS = ['#ff4f97', '#57d6e8', '#a184ff', '#f7a6cf', '#ff7ab0', '#8fdcf0', '#c3adff'];
 const nameColor = n => COLORS[[...String(n || '?').toLowerCase()].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % COLORS.length];
 const hostOf = o => { try { return new URL(o).host; } catch { return String(o); } };
@@ -494,6 +495,7 @@ async function send(text) {
 const SIGN_REFUSED = new Set(['bad_signature', 'signing_unavailable']);
 // a signature for a message to an Ember server, when this account can sign there (null otherwise: it goes unsigned)
 async function signFor(c, v, body, { reply_to = null, edit_of = null } = {}) {
+  if (!SET.sign) return null;
   if (!HC?.canSign() || c.info?.accounts_mode !== 'velora' || !c.user?.velora_id) return null;
   try { return await HC.signMessage({ instance: c.origin, community: v.sid, channel: v.cid, author: c.user.velora_id, body, attachments: [], reply_to, edit_of }, c.info); }
   catch { return null; }
@@ -596,24 +598,28 @@ function render() { renderStatus(); renderLeft(); renderRight(); renderLog(true)
 
 function renderStatus() {
   const v = S.view;
-  let server = 'not connected', channel = '', count = '';
+  let server = S.me ? 'home' : 'not connected', channel = '', count = '';
   if (v.kind === 'channel') {
     const d = S.detail[skey(v.origin, v.sid)];
-    server = d?.server?.name || hostOf(v.origin);
-    channel = '#' + (d?.channels.find(c => c.cid === v.cid)?.name || '?');
+    const ch = d?.channels.find(c => c.cid === v.cid);
+    channel = '# ' + (ch?.name || '?');
+    server = ch?.topic || d?.server?.name || hostOf(v.origin);
     const mem = S.members[skey(v.origin, v.sid)];
     if (mem) count = `${mem.filter(m => isOnline(m)).length || mem.length} ${mem.some(isOnline) ? 'online' : 'members'}`;
-  } else if (v.kind === 'dm') { server = 'direct messages'; channel = '@' + v.user; }
-  else if (S.me) server = 'home';
+  } else if (v.kind === 'dm') { server = 'direct message'; channel = '@ ' + v.user; }
   $('st-server').textContent = server;
   $('st-channel').textContent = channel;
   $('st-count').textContent = count;
+  const st = S.demo ? 'ready' : HC?.status();
+  $('st-sign').textContent = v.kind === 'channel' && SET.sign && (S.demo || HC?.canSign()) ? '● signed' : '';
+  $('st-e2ee').textContent = v.kind === 'dm' && st === 'ready' ? 'e2ee' : '';
+  $('dm-state').textContent = { ready: 'open', locked: 'locked', none: 'set up' }[st] || '…';
+  $('btn-dms').classList.toggle('on', st === 'ready'); $('dm-led').classList.toggle('on', st === 'ready');
   const anyOpen = [...S.insts.values()].some(c => c.status === 'open') || S.home.status === 'open' || S.demo;
-  const me = $('st-me');
-  const lock = !S.demo && HC?.status() === 'ready' ? ' 🔒' : '';
-  me.textContent = S.me ? `${S.me}${lock} · ${S.demo ? 'demo' : anyOpen ? 'connected' : 'connecting'}` : (S.token ? 'connecting' : 'offline');
-  me.classList.toggle('off', !anyOpen);
-  document.title = (Object.values(S.unread).some(Boolean) ? '* ' : '') + (channel ? channel + ' · ' : '') + 'Hammi Chat';
+  $('me-name').textContent = S.me || 'sign in';
+  $('me-state').textContent = S.me ? (S.demo ? 'demo' : anyOpen ? 'online' : 'connecting') : (S.token ? 'connecting' : 'offline');
+  $('me-led').classList.toggle('on', !!S.me && anyOpen);
+  document.title = (Object.values(S.unread).some(Boolean) ? '* ' : '') + (channel ? channel.replace(' ', '') + ' · ' : '') + 'Hammi Chat';
 }
 const presenceOf = name => { const p = S.presence[name]; return p && p.chat === false ? null : p; };
 const isOnline = m => m.online === true || ['online', 'idle', 'dnd'].includes(presenceOf(m.username)?.status || m.presence?.status || m.status);
@@ -629,42 +635,54 @@ function rewatchPresence() {
   watched.clear(); watchPresence(names);
 }
 
+const initials = n => { const w = String(n || '?').replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/); return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?').slice(0, 2)).toLowerCase(); };
+const prevLit = new Set();
 function renderLeft() {
-  const out = [];
-  out.push(`<div class="h">SERVERS <button class="add" data-act="add" title="Add an Ember server">+</button></div>`);
-  if (!S.insts.size) out.push(`<div class="empty">none yet: /add &lt;address&gt;</div>`);
+  const keys = [], out = [];
+  let here = null;
   for (const c of S.insts.values()) {
     if (c.status !== 'open' && !c.servers.length) {
-      const label = { connecting: 'connecting...', closed: 'reconnecting...', error: c.error || 'error', banned: 'banned', restricted: 'restricted' }[c.status] || c.status;
-      out.push(`<div class="ln ${c.status === 'error' || c.status === 'banned' ? 'warn' : ''}" title="${esc(c.error || '')}">${esc(c.info?.community?.name || c.info?.name || hostOf(c.origin))} <small>${esc(label)}</small></div>`);
+      const label = { connecting: 'connecting', closed: 'reconnecting', error: c.error || 'error', banned: 'banned', restricted: 'restricted' }[c.status] || c.status;
+      const nm = c.info?.community?.name || c.info?.name || hostOf(c.origin);
+      keys.push(`<div class="pad"><button class="k grey" title="${esc(nm)}: ${esc(label)}">${esc(initials(nm))}</button><span class="led"></span></div>`);
+      out.push(`<div class="row static ${c.status === 'error' || c.status === 'banned' ? 'warn' : ''}" title="${esc(c.error || '')}"><span class="led"></span><span class="nm">${esc(nm)}</span><small>${esc(label)}</small></div>`);
       continue;
     }
     for (const s of c.servers) {
       const k = skey(c.origin, s.sid), d = S.detail[k];
-      const here = S.view.kind === 'channel' && S.view.origin === c.origin && S.view.sid === s.sid;
+      const on = S.view.kind === 'channel' && S.view.origin === c.origin && S.view.sid === s.sid;
       const un = (d?.channels || []).filter(ch => S.unread[`c|${c.origin}|${ch.cid}`]).length;
       const men = (d?.channels || []).reduce((a, ch) => a + (S.mentions[`c|${c.origin}|${ch.cid}`] || 0), 0);
-      out.push(`<button class="ln ${here ? 'hot' : un ? 'hot' : ''}" data-act="server" data-o="${esc(c.origin)}" data-s="${esc(s.sid)}">${here ? '▾' : '▸'} ${esc(d?.server?.name || s.name || s.sid)}${men ? ` <span class="n">[@${men}]</span>` : un ? ` <span class="n">[${un}]</span>` : ''}${c.status !== 'open' ? ' <small>~</small>' : ''}</button>`);
-      if (!here || !d) continue;
-      for (const g of orderedChannels(d)) {
-        if (g.name) out.push(`<div class="ln sub"><small>${esc(g.name.toUpperCase())}</small></div>`);
-        for (const ch of g.list) {
-          const vk = `c|${c.origin}|${ch.cid}`, on = vkeyOf(S.view) === vk;
-          const voice = ch.type === 'voice', link = ch.type === 'link';
-          const icon = voice ? '♪' : link ? '↗' : '#';
-          if (voice || link) { out.push(`<div class="ln sub" title="${voice ? 'Voice channels need the full Ember app' : esc(ch.config?.url || '')}"><small>${icon}${esc(ch.name)}</small></div>`); continue; }
-          out.push(`<button class="ln sub ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="channel" data-o="${esc(c.origin)}" data-s="${esc(s.sid)}" data-c="${esc(ch.cid)}">${icon}${esc(ch.name)}${S.mentions[vk] ? ` <span class="n">@${S.mentions[vk]}</span>` : ''}</button>`);
-        }
-      }
+      const nm = d?.server?.name || s.name || s.sid;
+      const lit = !on && (un || men), lk = 's|' + k, fresh = lit && !prevLit.has(lk);
+      if (lit) prevLit.add(lk); else prevLit.delete(lk);
+      keys.push(`<div class="pad"><button class="k ${on ? 'orange' : 'black'}" data-act="server" data-o="${esc(c.origin)}" data-s="${esc(s.sid)}" title="${esc(nm)}${c.status !== 'open' ? ' (reconnecting)' : ''}">${esc(initials(nm))}${men ? `<span class="men">@${men}</span>` : ''}</button><span class="led${lit ? ' on' : ''}${fresh ? ' new' : ''}"></span></div>`);
+      if (on) here = { c, s, d, nm };
     }
   }
-  out.push(`<div class="h">DIRECT <button class="add" data-act="newdm" title="Message someone">+</button></div>`);
-  if (!S.dms.length) out.push(`<div class="empty">no DMs yet: /dm &lt;name&gt;</div>`);
+  keys.push(`<div class="pad"><button class="k grey" data-act="add" title="Add an Ember server">+</button></div>`);
+  if (here) {
+    const { c, s, d, nm } = here;
+    out.push(`<h3 class="legend"><span class="ttl">${esc(nm)}</span><span class="line"></span><span class="n">${(d?.channels || []).length}</span></h3>`);
+    if (d) for (const g of orderedChannels(d)) {
+      if (g.name) out.push(`<div class="grp">${esc(g.name)}</div>`);
+      for (const ch of g.list) {
+        const vk = `c|${c.origin}|${ch.cid}`, on = vkeyOf(S.view) === vk;
+        const voice = ch.type === 'voice', link = ch.type === 'link';
+        if (voice || link) { out.push(`<div class="row static" title="${voice ? 'Voice channels need the full Ember app' : esc(ch.config?.url || '')}"><span class="led"></span><span class="nm">${voice ? '◖ ' : '↗ '}${esc(ch.name)}</span></div>`); continue; }
+        out.push(`<button class="row ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="channel" data-o="${esc(c.origin)}" data-s="${esc(s.sid)}" data-c="${esc(ch.cid)}"><span class="led${on || S.unread[vk] ? ' on' : ''}"></span><span class="nm">${esc(ch.name)}</span>${S.mentions[vk] ? `<span class="men">@${S.mentions[vk]}</span>` : ''}</button>`);
+      }
+    }
+    out.push('<div class="gap"></div>');
+  } else if (!S.insts.size) out.push(`<h3 class="legend"><span class="ttl">servers</span><span class="line"></span></h3><div class="empty">None yet. Press + or type /add &lt;address&gt;.</div><div class="gap"></div>`);
+  out.push(`<h3 class="legend"><span class="ttl">direct</span><span class="line"></span><button class="add" data-act="newdm" title="Message someone">+</button></h3>`);
+  if (!S.dms.length) out.push(`<div class="empty">No DMs yet. Type /dm &lt;name&gt;.</div>`);
   for (const d of S.dms.slice(0, 40)) {
     const vk = `d|${d.username.toLowerCase()}`, on = vkeyOf(S.view) === vk;
-    out.push(`<button class="ln ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}">${isOnline(d) ? '●' : '○'} ${esc(d.username)}${S.unread[vk] && !on ? ' <span class="n">*</span>' : ''}</button>`);
+    out.push(`<button class="row ${on ? 'on' : S.unread[vk] ? 'hot' : ''}" data-act="dm" data-u="${esc(d.username)}"><span class="led${isOnline(d) ? ' on blue' : ''}"></span><span class="nm">${esc(d.username)}</span>${S.unread[vk] && !on ? '<span class="men">●</span>' : ''}</button>`);
   }
-  $('left').innerHTML = out.join('');
+  $('rail').innerHTML = keys.join('');
+  $('left').innerHTML = `<div class="mrail">${keys.join('')}</div>` + out.join('');
   renderStatus();
 }
 
@@ -672,22 +690,22 @@ function renderRight() {
   const v = S.view, out = [];
   if (v.kind === 'channel') {
     const mem = S.members[skey(v.origin, v.sid)];
-    if (!mem) out.push('<div class="empty">loading members...</div>');
+    if (!mem) out.push('<h3 class="legend"><span class="ttl">members</span><span class="line"></span></h3><div class="empty">loading…</div>');
     else {
       const name = m => m.nick || m.display_name || m.username;
       const role = m => (m.owner || m.is_owner ? 'owner' : m.admin || m.is_admin ? 'admin' : m.moderator || m.is_mod ? 'mod' : m.bot ? 'bot' : '');
-      const tagOf = m => role(m) ? ` <small>${role(m)}</small>` : '';
       const hasPresence = mem.some(m => 'online' in m || m.presence || m.status);
       const on = hasPresence ? mem.filter(isOnline) : mem, off = hasPresence ? mem.filter(m => !isOnline(m)) : [];
-      out.push(`<div class="h">${hasPresence ? 'ONLINE' : 'MEMBERS'} · ${on.length}</div>`);
-      for (const m of on.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}" style="color:${nameColor(m.username)}" title="Message ${esc(m.username)}">${esc(name(m))}${tagOf(m)}</button>`);
-      if (off.length) { out.push(`<div class="h">OFFLINE · ${off.length}</div>`); for (const m of off.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}">${esc(name(m))}${tagOf(m)}</button>`); }
+      const row = (m, lit) => { const act = presenceOf(m.username)?.activity?.name || presenceOf(m.username)?.custom_status || ''; return `<button class="row mrow" data-act="dm" data-u="${esc(m.username)}" title="Message ${esc(m.username)}"><span class="led${lit ? ' on' : ''}"></span><span class="who2"><span>${esc(name(m))} ${role(m) ? `<small class="role">${role(m)}</small>` : ''}</span>${act && lit ? `<small>${esc(String(act).slice(0, 40))}</small>` : ''}</span></button>`; };
+      out.push(`<h3 class="legend"><span class="ttl">${hasPresence ? 'online' : 'members'}</span><span class="line"></span><span class="n">${String(on.length).padStart(2, '0')}</span></h3>`);
+      for (const m of on.slice(0, 300)) out.push(row(m, hasPresence));
+      if (off.length) { out.push(`<div class="gap"></div><h3 class="legend"><span class="ttl">offline</span><span class="line"></span><span class="n">${String(off.length).padStart(2, '0')}</span></h3>`); for (const m of off.slice(0, 300)) out.push(row(m, false)); }
     }
   } else if (v.kind === 'dm') {
-    out.push(`<div class="h">TALKING TO</div><div class="ln" style="color:${nameColor(v.user)}">${esc(v.user)}</div>`);
+    out.push(`<h3 class="legend"><span class="ttl">talking to</span><span class="line"></span></h3><div class="row static"><span class="led${isOnline(S.dms.find(d => d.username === v.user) || {}) ? ' on blue' : ''}"></span>${esc(v.user)}</div><div class="gap"></div>`);
     const st = HC?.status();
-    out.push(`<div class="h">ENCRYPTION</div><div class="empty" style="white-space:normal">${st === 'ready' ? '🔒 DMs are end-to-end encrypted on this device.' : st === 'locked' ? 'Locked here. Type /unlock to read encrypted DMs.' : st === 'none' ? 'Not set up yet. Type /unlock to set up encrypted DMs.' : 'checking...'}</div>`);
-  } else out.push('<div class="h">MEMBERS</div><div class="empty">pick a channel</div>');
+    out.push(`<h3 class="legend"><span class="ttl">encryption</span><span class="line"></span></h3><div class="empty">${st === 'ready' ? 'DMs are end-to-end encrypted on this device.' : st === 'locked' ? 'Locked here. Press DMS or type /unlock to read encrypted DMs.' : st === 'none' ? 'Not set up yet. Press DMS or type /unlock.' : 'checking…'}</div>`);
+  } else out.push('<h3 class="legend"><span class="ttl">members</span><span class="line"></span></h3><div class="empty">pick a channel</div>');
   $('right').innerHTML = out.join('');
 }
 
@@ -767,12 +785,12 @@ function renderLog(stick) {
       const img = /^image\//.test(f.mime || '');
       tx += `<button class="att efile" data-act="efile" data-link="${esc(link)}" data-img="${img ? 1 : ''}">[${img ? 'image' : 'file'}, encrypted] ${esc(fixName(f.name))}</button>`;
     }
-    if (m.dmSig === 'valid') tx += ' <span class="sig ok" title="Encrypted, and signed by their key">🔒</span>';
+    if (m.dmSig === 'valid') tx += ' <span class="sig ok" title="Encrypted, and signed by their key">e2ee ✓</span>';
     else if (m.dmSig === 'invalid') tx += ' <span class="sig bad" title="The signature on this encrypted message does not match the sender\'s key">[signature mismatch]</span>';
-    else if (m.sealed === 'open') tx += ' <span class="sig" title="Encrypted">🔒</span>';
+    else if (m.sealed === 'open') tx += ' <span class="sig" title="Encrypted">e2ee</span>';
     if (m.signature && S.view.kind === 'channel') {
       const sk = `${S.view.origin}|${m.id}|${m.signature.sig}`, vd = S.sigs[sk];
-      if (vd === 'ok') tx += ' <span class="sig ok" title="Signed: it really came from this Nookara account">✓</span>';
+      if (vd === 'ok') tx += ' <span class="sig ok" title="Signed: it really came from this Nookara account">signed</span>';
       else if (vd === 'bad') tx += ' <span class="sig bad" title="This message\'s signature does not check out. It may have been changed or faked.">[bad signature]</span>';
       else if (vd === undefined) { S.sigs[sk] = null; const c = S.insts.get(S.view.origin); HC.checkMessage({ ...m, origin: S.view.origin }, c?.info).then(r => { S.sigs[sk] = r || 'none'; if (r) renderLog(); }); }
     }
@@ -787,9 +805,9 @@ function renderLog(stick) {
     if (m.reactions?.length) tx += ' <span class="rx">' + m.reactions.map(r => `${r.me ? '<b>' : ''}${esc(r.emoji?.name || r.emoji)} ${r.count ?? (r.users || []).length}${r.me ? '</b>' : ''}`).join('  ') + '</span>';
     if (m.ephemeral) tx += ' <span class="ed">(only you can see this)</span>';
     if (m.failed) tx += ` <span class="ed">[not sent: ${esc(m.failed)}]</span>`;
-    const tag = m.author?.bot ? '<span class="tag">BOT</span>' : m.author?.webhook ? '<span class="tag">HOOK</span>' : '';
+    const tag = m.author?.bot ? '<span class="tag">bot</span>' : m.author?.webhook ? '<span class="tag">hook</span>' : '';
     const acts = m.pending || m.failed || m.ephemeral ? '' : `<span class="acts"><button data-act="reply" data-id="${esc(m.id)}" title="Reply">reply</button>${S.view.kind === 'channel' ? `<button data-act="react" data-id="${esc(m.id)}" title="React">+:)</button>` : ''}${mine ? `<button data-act="edit" data-id="${esc(m.id)}">edit</button><button data-act="del" data-id="${esc(m.id)}">del</button>` : ''}</span>`;
-    out.push(`<div class="l${m.pending ? ' pending' : ''}${m.failed ? ' failed' : ''}${mention ? ' mention' : ''}" data-id="${esc(m.id)}"><span class="ts">${hhmm(m.created_at)}</span><button class="nk" style="color:${nameColor(m.author?.username || who)}" data-act="dm" data-u="${esc(m.author?.username || '')}" title="${esc(m.author?.username || '')}">${esc(who)}</button><span class="tx">${tag}${tx}</span>${acts}</div>`);
+    out.push(`<div class="l${mine ? ' self' : ''}${m.pending ? ' pending' : ''}${m.failed ? ' failed' : ''}${mention ? ' mention' : ''}" data-id="${esc(m.id)}"><span class="ts">${hhmm(m.created_at)}</span><button class="nk" data-act="dm" data-u="${esc(m.author?.username || '')}" title="${esc(m.author?.username || '')}">${esc(who)}</button><span class="tx">${tag}${tx}</span>${acts}</div>`);
   }
   log.innerHTML = out.join('');
   if (stick || atBottom) log.scrollTop = log.scrollHeight;
@@ -1073,14 +1091,57 @@ $('log').addEventListener('scroll', () => { if ($('log').scrollTop < 40 && S.msg
 function closeDrawers() { $('left').classList.remove('open'); $('right').classList.remove('open'); }
 $('btn-left').addEventListener('click', () => { $('right').classList.remove('open'); $('left').classList.toggle('open'); });
 $('btn-right').addEventListener('click', () => { $('left').classList.remove('open'); $('right').classList.toggle('open'); });
+$('btn-dms').addEventListener('click', () => { if (S.demo) { sys('Encrypted DMs need a real sign-in.'); return; } openKeys(); });
 $('st-me').addEventListener('click', () => { if (!S.me) { showLogin(); return; } if (confirm(`Signed in as ${S.me}. Sign out?`)) signOut(); });
 $('log').addEventListener('click', closeDrawers);
 $('signin').addEventListener('click', signIn);
 $('demo').addEventListener('click', () => { location.search = '?demo'; });
 
+// settings: theme, accent, text size, display toggles, key clicks, signing, notifications
+function applySettings() {
+  const root = document.documentElement;
+  if (SET.theme === 'light' || SET.theme === 'dark') root.dataset.theme = SET.theme; else delete root.dataset.theme;
+  root.classList.toggle('blue', SET.accent === 'blue');
+  root.style.setProperty('--fs', SET.fs + 'px'); $('fs').value = SET.fs; $('fs-val').textContent = SET.fs + ' px';
+  const app = $('app'); app.classList.toggle('no-ts', !SET.ts); app.classList.toggle('compact', SET.compact); app.classList.toggle('blinky', SET.blink);
+  document.querySelectorAll('[data-set] .sk').forEach(el => { const g = el.closest('[data-set]').dataset.set, v = el.querySelector('button').dataset.v; el.querySelector('.led').classList.toggle('on', (SET[g] || 'auto') === v); });
+  document.querySelectorAll('[data-tog]').forEach(b => b.previousElementSibling.classList.toggle('on', !!SET[b.dataset.tog]));
+  store.set('hammichat_settings', SET);
+}
+function toggleSettings(open = $('sheet').hidden) {
+  $('sheet').hidden = !open; $('btn-settings').classList.toggle('on', open); $('set-led').classList.toggle('on', open); $('btn-settings').setAttribute('aria-expanded', open);
+}
+$('btn-settings').addEventListener('click', () => toggleSettings());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) toggleSettings(false); });
+document.addEventListener('pointerdown', e => { if (!$('sheet').hidden && !e.target.closest('#sheet, #btn-settings')) toggleSettings(false); });
+$('sheet').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const grp = b.closest('[data-set]');
+  if (grp) SET[grp.dataset.set] = b.dataset.v;
+  else if (b.dataset.tog) {
+    SET[b.dataset.tog] = !SET[b.dataset.tog];
+    if (b.dataset.tog === 'notify' && SET.notify && 'Notification' in window && Notification.permission !== 'granted') { const p = await Notification.requestPermission().catch(() => 'denied'); if (p !== 'granted') { SET.notify = false; sys('Notifications are blocked in this browser.', 'err'); } }
+  }
+  applySettings(); renderStatus(); if (b.dataset.tog === 'ts' || b.dataset.tog === 'compact') renderLog();
+});
+$('fs').addEventListener('input', e => { SET.fs = +e.target.value; applySettings(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applySettings);
+let audio;
+document.addEventListener('pointerdown', e => {
+  if (!SET.click || !e.target.closest('.k')) return;
+  try { audio = audio || new AudioContext(); const t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain(), f = audio.createBiquadFilter();
+    o.type = 'square'; o.frequency.setValueAtTime(1800, t); o.frequency.exponentialRampToValueAtTime(300, t + .02);
+    f.type = 'highpass'; f.frequency.value = 900; g.gain.setValueAtTime(.1, t); g.gain.exponentialRampToValueAtTime(.001, t + .04);
+    o.connect(f).connect(g).connect(audio.destination); o.start(t); o.stop(t + .05); } catch { /* no audio */ }
+});
+$('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { const s = document.querySelector('.send'); s.classList.add('press'); setTimeout(() => s.classList.remove('press'), 120); } });
+const tick = () => { const d = new Date(), t = d.toTimeString(); $('clock').innerHTML = t.slice(0, 2) + (d.getSeconds() % 2 ? '<s>:</s>' : ':') + t.slice(3, 5); };
+tick(); setInterval(tick, 1000);
+applySettings();
+
 // notifications for mentions and DMs while the tab is in the background
 function notify(title, body) {
-  if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!SET.notify || !document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
   try { new Notification(title, { body: String(body || '').slice(0, 140), tag: 'hammi-chat' }); } catch { /* fine */ }
 }
 document.addEventListener('visibilitychange', () => {
@@ -1156,7 +1217,7 @@ function demoData() {
       mk(4, 'pixelfox', 'made new sprites for Loose Thread, tell me what you think', { attachments: [{ url: 'https://hammi.ca/img/', name: 'sprites.png', size: 43008 }], reactions: [{ emoji: '✨', count: 4 }, { emoji: '🧵', count: 2, me: true }] }),
       mk(5, 'mothwing', 'the moth one is my favourite obviously'),
       mk(6, 'Dipish', 'these are great, I will put them in tonight. also working on a new chat client for this server :)', { reactions: [{ emoji: '👀', count: 3 }] }),
-      mk(7, 'starbyte', '@Dipish is it the terminal one? try `/help` in it'),
+      mk(7, 'starbyte', '@Dipish is this the new look? try `/help` in it'),
     ],
   };
 }
@@ -1175,7 +1236,7 @@ function demoDm(user) {
   const t = Date.now() - 30 * 60000;
   return { messages: [
     { id: 1, from: user, to: 'Dipish', body: `hey! it's ${user}. this is a demo DM`, sent_at: t },
-    { id: 2, from: 'Dipish', to: user, body: 'nice, the terminal look is fun', sent_at: t + 60000 },
+    { id: 2, from: 'Dipish', to: user, body: 'nice, the new look is clean', sent_at: t + 60000 },
     { id: 3, from: user, to: 'Dipish', enc: true, sent_at: t + 120000 },
   ] };
 }
@@ -1194,7 +1255,7 @@ function startDemo() {
 
 // /notify asks for notification permission (it has to come from a key press or click)
 const _command = command;
-command = async raw => { if (/^\/notify\b/i.test(raw)) { if ('Notification' in window) { const p = await Notification.requestPermission(); sys('notifications: ' + p); } return; } return _command(raw); };
+command = async raw => { if (/^\/notify\b/i.test(raw)) { if ('Notification' in window) { const p = await Notification.requestPermission(); SET.notify = p === 'granted'; applySettings(); sys('notifications: ' + p); } return; } return _command(raw); };
 
 render();
 if (/[?&]demo\b/.test(location.search)) startDemo();
