@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.4.1' };
+const CLIENT = { name: 'Hammi Chat', version: '0.5.0' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -625,7 +625,7 @@ function renderStatus() {
   $('btn-dms').classList.toggle('on', st === 'ready'); $('dm-led').classList.toggle('on', st === 'ready');
   const anyOpen = [...S.insts.values()].some(c => c.status === 'open') || S.home.status === 'open' || S.demo;
   $('me-name').textContent = S.me || 'sign in';
-  $('me-state').textContent = S.me ? (S.demo ? 'demo' : anyOpen ? 'online' : 'connecting') : (S.token ? 'connecting' : 'offline');
+  $('me-state').textContent = S.me ? (S.myStatus && S.myStatus !== 'online' ? ({ idle: 'idle', dnd: 'dnd', invisible: 'hidden' })[S.myStatus] : S.demo ? 'demo' : anyOpen ? 'online' : 'connecting') : (S.token ? 'connecting' : 'offline');
   $('me-led').classList.toggle('on', !!S.me && anyOpen);
   document.title = (Object.values(S.unread).some(Boolean) ? '* ' : '') + (channel ? channel.replace(' ', '') + ' · ' : '') + 'Hammi Chat';
 }
@@ -816,10 +816,12 @@ function renderLog(stick) {
     // encrypted DMs are the normal case (the header says e2ee), so only the exceptions get a label
     if (m.dmSig === 'invalid') tx += ' <span class="sig bad" title="The signature on this encrypted message does not match the sender\'s key">[signature mismatch]</span>';
     else if (S.view.kind === 'dm' && !S.demo && !m.sealed && m.body && !m.sysText) tx += ' <span class="sig" title="This message was sent without encryption">not encrypted</span>';
+    // a Nookara account's message on a server that supports signing, sent without a signature (not bots, hooks or local accounts)
+    if (!m.signature && S.view.kind === 'channel' && !S.demo && !m.pending && !m.sysText && !m.system && !m.author?.bot && !m.author?.webhook && m.author?.velora_id && S.insts.get(S.view.origin)?.info?.accounts_mode === 'velora') tx += ' <span class="sig" title="This message has no signature, so it can\'t be proven it came from this account">unsigned</span>';
     if (m.signature && S.view.kind === 'channel') {
       const sk = `${S.view.origin}|${m.id}|${m.signature.sig}`, vd = S.sigs[sk];
-      if (vd === 'ok') tx += ' <span class="sig ok" title="Signed: it really came from this Nookara account">signed</span>';
-      else if (vd === 'bad') tx += ' <span class="sig bad" title="This message\'s signature does not check out. It may have been changed or faked.">[bad signature]</span>';
+      // a good signature is the normal case: only the exceptions get a label
+      if (vd === 'bad') tx += ' <span class="sig bad" title="This message\'s signature does not check out. It may have been changed or faked.">[bad signature]</span>';
       else if (vd === undefined) { S.sigs[sk] = null; const c = S.insts.get(S.view.origin); HC.checkMessage({ ...m, origin: S.view.origin }, c?.info).then(r => { S.sigs[sk] = r || 'none'; if (r) renderLog(); }); }
     }
     if (m.edited_at) tx += ' <span class="ed">(edited)</span>';
@@ -1057,6 +1059,80 @@ input.addEventListener('keydown', e => {
     if (m && !m.pending) { e.preventDefault(); S.editing = { id: m.id, vkey: vk }; input.value = m.body || ''; setPromptLabel(); autosize(); }
   }
 });
+// ───────────────────────── profile (your Nookara profile, status) ─────────────────────────
+const prof = { base: null, media: {}, status: 'online', picFor: null, color: null };
+const absUrl = u => (!u ? '' : /^https:\/\//.test(u) ? u : u.startsWith('/') ? NOOKARA + u : '');
+const PROF_ERR = { insufficient_scope: 'Hammi Chat needs the "edit profile" permission on Nookara for this. Add it to the app, then sign out and in again.', display_name_too_long: 'Display names are at most 32 characters.', display_name_at: "Display names can't start with @.", display_name_reserved: 'That name is reserved, pick another.', invalid_display_name: "That display name can't be used.", display_name_bad_characters: 'Display names can only use letters, numbers, symbols and single spaces.', bio_too_long: 'Your bio is too long.', invalid_website: 'Website links look like https://your-site.com', gif_pro_only: 'Animated pictures need Nookara Pro.', file_too_large: 'That picture is too big.', upload_suspended: 'Uploads are suspended on your account.' };
+function profMsg(t, ok) { const e = $('pf-msg'); e.textContent = t || ''; e.classList.toggle('pf-ok', !!ok); }
+function drawPics() {
+  const pick = t => prof.media[t] === 'remove' ? '' : prof.media[t]?.preview || absUrl(prof.base?.[t]);
+  const pf = pick('pfp'), bn = pick('banner');
+  $('prof-pfp').style.backgroundImage = pf ? `url("${pf.replace(/"/g, '%22')}")` : '';
+  $('prof-pfp').textContent = pf ? '' : initials(S.me || '?');
+  $('prof-banner').style.backgroundImage = bn ? `url("${bn.replace(/"/g, '%22')}")` : '';
+}
+function drawStatus() { document.querySelectorAll('#pf-status [data-st]').forEach(b => { b.parentElement.querySelector('.led').classList.toggle('on', b.dataset.st === prof.status); b.classList.toggle('orange', b.dataset.st === prof.status); b.classList.toggle('black', b.dataset.st !== prof.status); }); }
+function drawColor() { $('pf-color').parentElement.classList.toggle('none', !prof.color); if (prof.color) $('pf-color').value = prof.color; }
+const bioLimit = () => prof.base?.bio_limit || 200;
+function bioCount() { const n = [...$('pf-bio').value].length; $('pf-bio-n').textContent = `${n} / ${bioLimit()}`; }
+async function openProfile() {
+  $('profile').hidden = false; $('prof-user').textContent = S.me || ''; profMsg('loading…');
+  prof.media = {};
+  let d;
+  try { d = S.demo ? { account: { username: S.me, display_name: 'Dipish' }, profile: { bio: 'I make hammi.ca and its games.', pronouns: '', website: 'https://hammi.ca', color: '#ff5a1f' } } : await nk('/account/me'); }
+  catch (e) { profMsg("Couldn't load your profile: " + (PROF_ERR[e.message] || e.message)); return; }
+  const a = d.account || d.user || d, p = d.profile || {};
+  prof.base = { display_name: a.display_name || '', bio: p.bio || '', pronouns: p.pronouns || '', website: p.website || '', color: p.color || '', pfp: p.pfp || '', banner: p.banner || '', bio_limit: p.bio_limit || a.bio_limit || d.bio_limit };
+  $('pf-name').value = prof.base.display_name; $('pf-pronouns').value = prof.base.pronouns; $('pf-bio').value = prof.base.bio; $('pf-web').value = prof.base.website;
+  prof.color = /^#[0-9a-f]{6}$/i.test(prof.base.color) ? prof.base.color : null;
+  prof.status = S.myStatus || 'online';
+  $('pf-custom').value = S.myCustom || '';
+  drawPics(); drawStatus(); drawColor(); bioCount(); profMsg('');
+  $('pf-name').focus();
+}
+function closeProfile() { Object.values(prof.media).forEach(m => m?.preview && URL.revokeObjectURL(m.preview)); prof.media = {}; $('profile').hidden = true; }
+async function saveProfile() {
+  const name = $('pf-name').value.trim(), bio = $('pf-bio').value, web = $('pf-web').value.trim();
+  if ([...bio].length > bioLimit()) { profMsg(`Your bio can be at most ${bioLimit()} characters.`); return; }
+  if (web && !/^https?:\/\/\S+\.\S+/.test(web)) { profMsg(PROF_ERR.invalid_website); return; }
+  $('pf-save').disabled = true; profMsg('saving…');
+  try {
+    if (!S.demo) {
+      const b = prof.base;
+      const fields = { display_name: name || null, bio, pronouns: $('pf-pronouns').value.trim(), website: web, color: prof.color || null };
+      if (name !== b.display_name || bio !== b.bio || fields.pronouns !== b.pronouns || web !== b.website || (prof.color || '') !== (b.color || '')) await nk('/account/update', { method: 'PATCH', body: JSON.stringify(fields) });
+      for (const t of ['pfp', 'banner']) {
+        const m = prof.media[t]; if (!m) continue;
+        if (m === 'remove') await nk(`/media/${t}`, { method: 'DELETE' });
+        else { const fd = new FormData(); fd.append('file', m.file); await nk(`/media/${t}`, { method: 'POST', body: fd }); }
+      }
+      const custom = $('pf-custom').value.trim();
+      if (custom !== (S.myCustom || '')) { await nk('/chat/presence/custom', { method: 'POST', body: JSON.stringify({ text: custom }) }); S.myCustom = custom; }
+      if (prof.status !== (S.myStatus || 'online')) { S.home.ws?.readyState === 1 && S.home.ws.send(JSON.stringify({ type: 'set_status', status: prof.status, persist: true })); S.myStatus = prof.status; }
+    } else { S.myStatus = prof.status; S.myCustom = $('pf-custom').value.trim(); }
+    profMsg(S.demo ? 'Demo mode: nothing was saved.' : 'Saved.', true);
+    if (!S.demo) setTimeout(() => { if (!$('profile').hidden) openProfile(); }, 600);
+  } catch (e) { profMsg("Couldn't save: " + (PROF_ERR[e.message] || e.message)); }
+  finally { $('pf-save').disabled = false; renderStatus(); }
+}
+$('prof-form').addEventListener('submit', e => { e.preventDefault(); saveProfile(); });
+$('pf-close').addEventListener('click', closeProfile);
+$('profile').addEventListener('click', e => { if (e.target.id === 'profile') closeProfile(); });
+$('profile').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeProfile(); } });
+$('pf-signout').addEventListener('click', () => ask({ title: 'account', tag: S.me, text: `Signed in as ${S.me}. Sign out?`, input: false, ok: 'sign out' }).then(y => { if (y) { closeProfile(); signOut(); } }));
+$('pf-status').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) { prof.status = b.dataset.st; drawStatus(); } });
+$('pf-color').addEventListener('input', e => { prof.color = e.target.value; drawColor(); });
+$('pf-color-clear').addEventListener('click', () => { prof.color = null; drawColor(); });
+$('pf-bio').addEventListener('input', bioCount);
+document.querySelectorAll('[data-pic]').forEach(b => b.addEventListener('click', () => { prof.picFor = b.dataset.pic; $('prof-file').click(); }));
+document.querySelectorAll('[data-pic-del]').forEach(b => b.addEventListener('click', () => { prof.media[b.dataset.picDel] = 'remove'; drawPics(); }));
+$('prof-file').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !prof.picFor) return;
+  if (!/^image\/(png|jpeg|gif|webp)$/.test(f.type)) { profMsg('Pick a PNG, JPG, GIF or WebP picture.'); return; }
+  if (f.size > 10 * 1048576) { profMsg(PROF_ERR.file_too_large); return; }
+  prof.media[prof.picFor] = { file: f, preview: URL.createObjectURL(f) }; drawPics(); profMsg('');
+});
+
 // ───────────────────────── in-app windows (instead of the browser's prompt / confirm) ─────────────────────────
 // ask({ title, tag, text, hint, value, placeholder, ok, cancel, input: false = a yes/no question, check(v) -> error text or '' })
 // resolves with the typed text (or true for a question), or null when cancelled
@@ -1257,7 +1333,7 @@ function closeDrawers() { $('left').classList.remove('open'); $('right').classLi
 $('btn-left').addEventListener('click', () => { $('right').classList.remove('open'); $('left').classList.toggle('open'); });
 $('btn-right').addEventListener('click', () => { $('left').classList.remove('open'); $('right').classList.toggle('open'); });
 $('btn-dms').addEventListener('click', () => { if (S.demo) { sys('Encrypted DMs need a real sign-in.'); return; } openKeys(); });
-$('st-me').addEventListener('click', () => { if (!S.me) { showLogin(); return; } ask({ title: 'account', tag: S.me, text: `Signed in as ${S.me}. Sign out?`, input: false, ok: 'sign out' }).then(y => { if (y) signOut(); }); });
+$('st-me').addEventListener('click', () => { if (!S.me) { showLogin(); return; } openProfile(); });
 $('log').addEventListener('click', closeDrawers);
 $('signin').addEventListener('click', signIn);
 $('demo').addEventListener('click', () => { location.search = '?demo'; });

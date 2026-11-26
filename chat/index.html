@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=0.4.1">
+<link rel="stylesheet" href="app.css?v=0.5.0">
 <script>try{var t=JSON.parse(localStorage.getItem("hammichat_settings")||"{}").theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
@@ -75,6 +75,28 @@
   <div class="set"><span>Desktop notifications<small>mentions and DMs</small></span><div class="sk"><span class="led"></span><button class="k black" data-tog="notify">ntf</button></div></div>
 </div>
 
+<div class="overlay" id="profile" hidden>
+  <form class="box profbox" id="prof-form" autocomplete="off">
+    <h4 class="boxh"><span>profile</span><b id="prof-user"></b></h4>
+    <div class="banner" id="prof-banner"><div class="pfp" id="prof-pfp"></div></div>
+    <div class="pics">
+      <span>picture</span><button type="button" class="k black sm" data-pic="pfp">change</button><button type="button" class="k black sm" data-pic-del="pfp">remove</button>
+      <span>banner</span><button type="button" class="k black sm" data-pic="banner">change</button><button type="button" class="k black sm" data-pic-del="banner">remove</button>
+      <input type="file" id="prof-file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+    </div>
+    <label class="fld"><span>display name</span><input id="pf-name" maxlength="32" placeholder="shown instead of your username"></label>
+    <div class="two">
+      <label class="fld"><span>pronouns</span><input id="pf-pronouns" maxlength="40"></label>
+      <label class="fld"><span>accent colour</span><span class="colrow"><input type="color" id="pf-color" value="#ff5a1f"><button type="button" class="clr" id="pf-color-clear">none</button></span></label>
+    </div>
+    <label class="fld"><span>bio <small id="pf-bio-n"></small></span><textarea id="pf-bio" rows="3"></textarea></label>
+    <label class="fld"><span>website</span><input id="pf-web" placeholder="https://"></label>
+    <div class="fld"><span>status</span><div class="opts" id="pf-status"><div class="sk"><span class="led"></span><button type="button" class="k black" data-st="online">on</button></div><div class="sk"><span class="led"></span><button type="button" class="k black" data-st="idle">idle</button></div><div class="sk"><span class="led"></span><button type="button" class="k black" data-st="dnd">dnd</button></div><div class="sk"><span class="led"></span><button type="button" class="k black" data-st="invisible">hide</button></div></div></div>
+    <label class="fld"><span>custom status</span><input id="pf-custom" maxlength="128" placeholder="what are you up to?"></label>
+    <p class="ask-err" id="pf-msg"></p>
+    <div class="ask-actions"><button type="button" class="k grey" id="pf-signout">sign out</button><span class="grow"></span><button type="button" class="k grey" id="pf-close">close</button><button type="submit" class="k orange" id="pf-save">save</button></div>
+  </form>
+</div>
 <div class="overlay" id="ask" hidden>
   <form class="box askbox" id="ask-form" autocomplete="off">
     <h4 class="boxh"><span id="ask-title"></span><b id="ask-tag"></b></h4>
@@ -117,7 +139,7 @@
   <div class="box keysbox" id="keys-body"></div>
 </div>
 
-<script src="e2ee.js?v=0.4.1"></script>
-<script src="app.js?v=0.4.1"></script>
+<script src="e2ee.js?v=0.5.0"></script>
+<script src="app.js?v=0.5.0"></script>
 </body>
 </html>
