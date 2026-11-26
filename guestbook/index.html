@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guest book · hammi.ca</title>
+<meta name="description" content="Sign the hammi.ca guest book: leave your name and a short note.">
+<meta name="theme-color" content="#dcdcd9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a1b" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/img/logo/hammi-icon.svg" type="image/svg+xml">
+<link rel="icon" href="/img/logo/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  try { const t = localStorage.getItem('hammi-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('hammi-accent') === 'blue') document.documentElement.classList.add('accent-blue'); } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface: #dcdcd9; --print: #3b3b3a; --print-dim: #7d7d7a; --rule: #b9b9b5;
+    --k-black-1: #2d2d2d; --k-black-2: #161616; --k-grey-1: #f1f0ed; --k-grey-2: #d0cfcb; --k-grey-ink: #2b2b2a;
+    --k-orange-1: #ff6326; --k-orange-2: #e5470f;
+    --led-off: #a3a39f; --led-on: #ff4a14;
+    --grid-a: rgba(0,0,0,.045); --grid-b: rgba(0,0,0,.08); --mark: rgba(0,0,0,.085);
+    --glass: #0b0b0c; --g-ink: #e9e9e6; --g-mute: #8d8d8a; --g-dim: #5a5a58; --g-line: #1e1e1f;
+    --orange: #ff5a1f; --orange-ink: #d8420c; --blue: #3c9eff;
+    --sans: Inter, "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -2px 1px rgba(0,0,0,.12), 0 1px 0 rgba(0,0,0,.25), 0 3px 3px -1px rgba(0,0,0,.2), 0 9px 14px -6px rgba(0,0,0,.3);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.35), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --surface: #1a1a1b; --print: #c9c9c5; --print-dim: #7d7d80; --rule: #343436;
+    --k-grey-1: #4a4a4c; --k-grey-2: #333335; --k-grey-ink: #e3e3df; --led-off: #3c3c3e;
+    --grid-a: rgba(255,255,255,.028); --grid-b: rgba(255,255,255,.055); --mark: rgba(255,255,255,.07);
+    --orange-ink: #ff6a33;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.7), 0 3px 3px -1px rgba(0,0,0,.4), 0 9px 14px -6px rgba(0,0,0,.6);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --surface: #1a1a1b; --print: #c9c9c5; --print-dim: #7d7d80; --rule: #343436;
+    --k-grey-1: #4a4a4c; --k-grey-2: #333335; --k-grey-ink: #e3e3df; --led-off: #3c3c3e;
+    --grid-a: rgba(255,255,255,.028); --grid-b: rgba(255,255,255,.055); --mark: rgba(255,255,255,.07);
+    --orange-ink: #ff6a33;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.7), 0 3px 3px -1px rgba(0,0,0,.4), 0 9px 14px -6px rgba(0,0,0,.6);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: dark; }
+  :root.accent-blue { --orange: #3c9eff; --orange-ink: #1f7fe0; --k-orange-1: #4aa6ff; --k-orange-2: #1f7fe0; --led-on: #3c9eff; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { overflow-x: hidden; scroll-behavior: smooth; background: var(--surface); }
+  body {
+    margin: 0; min-height: 100vh; overflow-x: hidden;
+    color: var(--print); font: 300 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased;
+    background-color: var(--surface);
+    background-image: linear-gradient(var(--grid-b) 1px, transparent 1px), linear-gradient(90deg, var(--grid-b) 1px, transparent 1px), linear-gradient(var(--grid-a) 1px, transparent 1px), linear-gradient(90deg, var(--grid-a) 1px, transparent 1px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px, auto;
+    background-position: -1px -1px;
+  }
+  a { color: var(--print); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  a:hover { color: var(--orange-ink); text-decoration-color: currentColor; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+  :focus-visible { outline: 1px solid var(--orange); outline-offset: 3px; }
+  [hidden] { display: none !important; }
+
+  /* ---------- drawing marks behind the page ---------- */
+  .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .backdrop svg.big { position: absolute; right: -8vw; bottom: -16vh; width: 70vh; height: 70vh; color: var(--mark); }
+  .ruler { position: absolute; left: 0; right: 0; top: 0; height: 10px; background: repeating-linear-gradient(90deg, var(--grid-b) 0 1px, transparent 1px 12px), repeating-linear-gradient(90deg, var(--mark) 0 1px, transparent 1px 120px); background-size: auto 5px, auto 10px; background-repeat: repeat-x; }
+  .ruler.v { right: auto; bottom: 0; width: 10px; height: auto; background: repeating-linear-gradient(0deg, var(--grid-b) 0 1px, transparent 1px 12px), repeating-linear-gradient(0deg, var(--mark) 0 1px, transparent 1px 120px); background-size: 5px auto, 10px auto; background-repeat: repeat-y; }
+  .cross { position: absolute; width: 18px; height: 18px; }
+  .cross::before, .cross::after { content: ""; position: absolute; background: var(--print-dim); opacity: .5; }
+  .cross::before { left: 8px; top: 0; width: 1px; height: 18px; }
+  .cross::after { top: 8px; left: 0; height: 1px; width: 18px; }
+  .coord { position: absolute; font: 400 9.5px var(--mono); letter-spacing: .08em; color: var(--print-dim); opacity: .8; }
+
+  .container { position: relative; z-index: 1; width: 1120px; max-width: calc(100% - 64px); margin: 0 auto; }
+
+  /* ---------- printed labels ---------- */
+  .lb { font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--print); }
+  .mono { font-family: var(--mono); }
+  .legend { display: flex; align-items: center; gap: 10px; margin: 0; font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--print); white-space: nowrap; }
+  .legend .ln { flex: 1; min-width: 12px; height: 1px; background: var(--rule); position: relative; }
+  .legend .ln::before, .legend .ln::after { content: ""; position: absolute; top: 0; width: 1px; height: 6px; background: var(--rule); }
+  .legend .ln::before { left: 0; } .legend .ln::after { right: 0; }
+  .legend .dim { color: var(--print-dim); font-family: var(--mono); letter-spacing: .08em; }
+
+  /* ---------- keys and lights ---------- */
+  .k {
+    position: relative; display: inline-grid; place-items: center; border-radius: 4px; text-decoration: none; user-select: none;
+    font: 400 11px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    transition: transform 70ms linear, box-shadow 70ms linear;
+    --kshadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.6), 0 3px 3px -1px rgba(0,0,0,.35), 0 9px 14px -6px rgba(0,0,0,.45);
+    --kpress: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 1px rgba(0,0,0,.3), 0 0 0 rgba(0,0,0,.6), 0 1px 1px rgba(0,0,0,.35), 0 3px 5px -3px rgba(0,0,0,.4);
+    box-shadow: var(--kshadow);
+  }
+  .k:active, .k.press { transform: translateY(2px); box-shadow: var(--kpress); }
+  .k.black { background: linear-gradient(180deg, var(--k-black-1), var(--k-black-2)); color: #eaeae6; }
+  .k.grey { background: linear-gradient(180deg, var(--k-grey-1), var(--k-grey-2)); color: var(--k-grey-ink); --kshadow: var(--gshadow); }
+  .k.orange { background: linear-gradient(180deg, var(--k-orange-1), var(--k-orange-2)); color: #fff; --kshadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 1px rgba(120,30,0,.35), 0 1px 0 rgba(120,30,0,.6), 0 3px 3px -1px rgba(0,0,0,.3), 0 9px 14px -6px rgba(0,0,0,.4); }
+  .k.black:hover, .k.orange:hover { color: #fff; } .k.grey:hover { color: var(--k-grey-ink); }
+  .k.off { cursor: default; opacity: .55; }
+  .k.off:active { transform: none; box-shadow: var(--kshadow); }
+  .k2 { display: grid; place-items: stretch; grid-template-rows: 1fr 1fr; width: 80px; height: 44px; border-radius: 3px; overflow: hidden; font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; }
+  .k2 span { display: grid; place-items: center; }
+  .k2 .t { background: linear-gradient(180deg, var(--k-black-1), var(--k-black-2)); color: #eaeae6; }
+  .k2 .b { background: linear-gradient(180deg, var(--k-grey-1), var(--k-grey-2)); color: var(--k-grey-ink); }
+  .k2.on .b { background: linear-gradient(180deg, var(--k-orange-1), var(--k-orange-2)); color: #fff; }
+  .led { width: 6px; height: 6px; border-radius: 50%; flex: none; display: inline-block; background: var(--led-off); box-shadow: inset 0 1px 1px rgba(0,0,0,.35); transition: background .12s, box-shadow .12s; }
+  .led.on { background: radial-gradient(circle at 40% 35%, #ffb08f, var(--led-on) 60%); box-shadow: 0 0 5px 1px color-mix(in srgb, var(--led-on) 55%, transparent); }
+  .led.slow { animation: pulse 2.4s steps(1) infinite; }
+  @keyframes pulse { 50% { background: var(--led-off); box-shadow: inset 0 1px 1px rgba(0,0,0,.35); } }
+
+  /* ---------- black display ---------- */
+  .display { position: relative; display: block; background: var(--glass); color: var(--g-ink); border-radius: 4px; overflow: hidden; box-shadow: var(--disp-shadow); }
+  .display::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(170deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.02) 22%, transparent 23%); }
+
+  /* ---------- header ---------- */
+  .top { display: flex; align-items: center; gap: 24px; padding: 34px 0 26px; }
+  .brand { display: flex; align-items: center; gap: 4px; color: var(--print); text-decoration: none; }
+  .brand:hover { color: var(--print); }
+  .brand svg { width: 52px; height: 52px; margin-left: -8px; }
+  .brand h1 { margin: 0; font: 300 40px/1 var(--sans); letter-spacing: -.04em; }
+  .brand h1 i { font-style: normal; color: var(--orange); font-weight: 500; }
+  .spec { display: flex; flex-direction: column; gap: 6px; padding-left: 18px; border-left: 1px solid var(--rule); font: 400 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); white-space: nowrap; }
+  .spec b { font-weight: 400; color: var(--orange-ink); }
+  .tiers { margin-left: auto; display: flex; align-items: flex-end; gap: 14px; }
+  .tier { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  /* ---------- footer ---------- */
+  .footer { margin-top: 72px; padding: 22px 0 56px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; font-size: 13px; color: var(--print-dim); }
+  .footer nav { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+  .footer nav a { color: var(--print-dim); text-decoration: none; }
+  .footer nav a:hover { color: var(--print); }
+  .footer .end { margin-left: auto; font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---------- settings sheet ---------- */
+  .sheet { position: absolute; z-index: 20; top: 92px; right: 0; width: min(330px, 100%); background: var(--glass); color: var(--g-ink); border-radius: 4px; padding: 16px 18px 12px; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 18px 40px -10px rgba(0,0,0,.6); animation: fade 120ms linear; }
+  @keyframes fade { from { opacity: 0; } }
+  .sheet h4 { margin: 0 0 12px; display: flex; justify-content: space-between; font: 400 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--g-mute); }
+  .sheet h4 b { color: var(--orange); font-weight: 400; }
+  .set { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--g-line); }
+  .set > span { font: 300 13px var(--sans); }
+  .set small { display: block; font: 400 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--g-dim); }
+  .opts { display: flex; gap: 8px; }
+  .sk { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .sk .k { width: 48px; height: 28px; font-size: 10px; }
+  .sk .led { width: 5px; height: 5px; }
+
+
+  /* ---------- guest book ---------- */
+  .container { width: 1120px; }
+  .top { position: relative; padding: 34px 0 34px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; }
+  .back .k { height: 34px; padding: 0 14px; }
+  .gb { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 56px; }
+
+  /* the form: printed labels over small black screens */
+  .sign { position: sticky; top: 24px; align-self: start; }
+  .sign form { display: grid; gap: 18px; margin-top: 18px; }
+  .field { display: grid; gap: 8px; }
+  .field .lb { display: flex; justify-content: space-between; }
+  .field .lb span:last-child { font-family: var(--mono); letter-spacing: .08em; color: var(--print-dim); text-transform: none; }
+  .scr { display: block; width: 100%; border: 0; margin: 0; background: var(--glass); color: var(--g-ink); border-radius: 4px; box-shadow: var(--disp-shadow);
+    font: 400 14px/1.5 var(--mono); padding: 11px 13px; caret-color: var(--orange); resize: none; }
+  .scr::placeholder { color: var(--g-dim); }
+  .scr:focus { outline: 1px solid var(--orange); outline-offset: 2px; }
+  textarea.scr { min-height: 150px; font: 300 15px/1.55 var(--sans); }
+  .scr[readonly] { color: var(--orange); }
+  .count { font: 400 10px var(--mono); letter-spacing: .08em; color: var(--print-dim); }
+  .count.over { color: var(--orange-ink); }
+  .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .actions .k { height: 40px; padding: 0 20px; min-width: 120px; }
+  .actions .k[disabled] { opacity: .55; cursor: default; transform: none; }
+  .status { display: flex; align-items: center; gap: 8px; min-height: 18px; font: 400 10.5px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--print-dim); }
+  .status.err { color: var(--orange-ink); }
+  .who { display: grid; gap: 10px; padding-top: 18px; margin-top: 4px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--print-dim); }
+  .who p { margin: 0; }
+  .who .k { height: 32px; padding: 0 14px; justify-self: start; }
+  .who b { font-weight: 400; color: var(--print); }
+  .note { margin: 14px 0 0; font-size: 13px; color: var(--print-dim); }
+
+  /* the book: one entry per row, numbered like a ledger */
+  .count-row { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 0; font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .count-row b { font: 500 30px/1 var(--mono); letter-spacing: -.05em; color: var(--print); }
+  .entries { list-style: none; margin: 8px 0 0; padding: 0; }
+  .entry { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 22px; padding: 24px 0; border-bottom: 1px solid var(--rule); }
+  .entry .no { font: 500 20px/.9 var(--mono); letter-spacing: -.05em; color: var(--print); }
+  .entry .no small { display: block; margin-top: 7px; font: 400 10px/1.5 var(--mono); letter-spacing: .1em; color: var(--print-dim); text-transform: uppercase; }
+  .entries .entry:first-child .no { color: var(--orange-ink); }
+  .entry h3 { margin: 0; font: 300 22px/1.2 var(--sans); letter-spacing: -.03em; overflow-wrap: anywhere; }
+  .entry .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 10px; }
+  .tag { font: 400 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .tag.on { color: var(--orange-ink); } .tag.on::before { content: "\25CF  "; }
+  .entry .msg { margin: 0; max-width: 620px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .reply { margin: 14px 0 0; max-width: 600px; padding: 2px 0 2px 16px; border-left: 2px solid var(--orange); }
+  .reply .tag { display: block; margin-bottom: 6px; }
+  .reply p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+  .entry.dim > div > :not(.tools) { opacity: .45; }
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .tools .k { height: 28px; padding: 0 12px; font-size: 10px; }
+  .tools textarea.scr { min-height: 80px; width: 100%; max-width: 600px; }
+  .more { margin-top: 24px; }
+  .more .k { height: 38px; padding: 0 18px; }
+  .empty { padding: 26px 22px; margin-top: 18px; }
+  .empty p { margin: 0; color: var(--g-mute); font-size: 14px; }
+  .empty b { display: block; margin-bottom: 6px; font: 400 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--orange); }
+  .entry.fresh { animation: fresh 1.6s linear; }
+  @keyframes fresh { 0%, 40% { background: color-mix(in srgb, var(--orange) 8%, transparent); } }
+
+  @media (max-width: 900px) { .gb { grid-template-columns: minmax(0, 1fr); gap: 40px; } .sign { position: static; } }
+  @media (max-width: 700px) {
+    .container { max-width: calc(100% - 32px); }
+    .spec { display: none; }
+    .brand h1 { font-size: 32px; }
+    .entry { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .entry .no small { display: inline; margin-left: 8px; }
+  }
+  @media (max-width: 560px) { .sheet { top: 84px; } .tier.hub { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <div class="ruler"></div><div class="ruler v"></div>
+  <svg class="big" viewBox="0 0 100 100"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><circle cx="50" cy="50" r="9" fill="none" stroke="currentColor" stroke-width=".4"/><path d="M50 30v40M30 50h40" stroke="currentColor" stroke-width=".15" stroke-dasharray="1 1"/></svg>
+  <span class="cross" style="left:18px;top:18px"></span><span class="cross" style="right:18px;top:18px"></span><span class="cross" style="left:18px;bottom:18px"></span><span class="cross" style="right:18px;bottom:18px"></span>
+  <span class="coord" style="left:44px;top:22px">a1</span><span class="coord" style="right:44px;top:22px">a8</span><span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · gb-1 rev 1</span>
+</div>
+
+<div class="container" id="top">
+  <header class="top">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="var(--orange)"/></svg>
+      <h1>hammi<i>.</i>ca</h1>
+    </a>
+    <div class="spec"><span><b>gb-1</b> · guest book</span><span>leave a note · say hi</span></div>
+    <div class="tiers">
+      <div class="tier hub"><span class="led"></span><a class="k grey back" href="/" style="width:80px;height:44px">← hub</a></div>
+      <div class="tier"><span class="led" id="set-led"></span><button class="k2 k" id="settings" aria-expanded="false" aria-controls="sheet"><span class="t">settings</span><span class="b">system</span></button></div>
+    </div>
+    <div class="sheet" id="sheet" hidden role="dialog" aria-label="Settings">
+      <h4><span>settings</span><b>system</b></h4>
+      <div class="set"><span>Mode<small>light or dark</small></span><div class="opts" data-set="theme"><div class="sk"><span class="led"></span><button class="k grey" data-v="light">light</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="dark">dark</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="auto">auto</button></div></div></div>
+      <div class="set"><span>Accent<small>key and light colour</small></span><div class="opts" data-set="accent"><div class="sk"><span class="led"></span><button class="k orange" data-v="orange">orng</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="blue" style="color:#7cc0ff">blue</button></div></div></div>
+    </div>
+  </header>
+
+  <div class="gb">
+    <section class="sign" aria-labelledby="sign-h">
+      <h2 class="legend" id="sign-h"><span>sign the book</span><span class="ln"></span><span class="dim">gb-1</span></h2>
+      <form id="form" autocomplete="off" novalidate>
+        <label class="field"><span class="lb"><span>Name</span><span id="name-note"></span></span>
+          <input class="scr" id="name" name="name" maxlength="24" placeholder="your name" required></label>
+        <label class="field"><span class="lb"><span>From</span><span>optional</span></span>
+          <input class="scr" id="from" name="from" maxlength="32" placeholder="a town, a country, a planet"></label>
+        <label class="field"><span class="lb"><span>Message</span><span class="count" id="count">0 / 500</span></span>
+          <textarea class="scr" id="message" name="message" rows="6" placeholder="say hi, tell me what you played, anything" required></textarea></label>
+        <label class="trap" aria-hidden="true">Website <input id="website" name="website" tabindex="-1" autocomplete="off"></label>
+        <div class="actions">
+          <button class="k orange" id="send" type="submit">Sign</button>
+          <span class="status" id="status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+      <div class="who" id="who" hidden></div>
+      <p class="note">Plain text only, no links. Be nice: notes can be hidden if they aren't.</p>
+    </section>
+
+    <main aria-labelledby="book-h">
+      <h2 class="legend" id="book-h"><span>the book</span><span class="ln"></span><span class="dim">newest first</span></h2>
+      <p class="count-row"><b id="total">··</b><span id="total-label">signatures</span><span id="waiting"></span></p>
+      <ol class="entries" id="entries" aria-live="polite"></ol>
+      <div class="display empty" id="empty" hidden><b id="empty-h">no signatures yet</b><p id="empty-p">Be the first to sign the book.</p></div>
+      <div class="more" id="more" hidden><button class="k grey" id="more-btn">Older entries</button></div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <nav><a href="/">Home</a><a href="/chat/">Hammi Chat</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="https://display.hammi.ca/">LED Wall</a></nav>
+    <span>&copy; <span id="year">2026</span> hammi.ca</span>
+    <span class="end">made by hand · gb-1</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const root = document.documentElement;
+  // The API lives on its own host. A local copy may point it elsewhere for testing.
+  let API = 'https://guestbook.hammi.ca';
+  const qp = new URLSearchParams(location.search).get('api');
+  if (qp && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) API = qp.replace(/\/+$/, '');
+  $('year').textContent = new Date().getFullYear();
+
+  /* ---------- settings: same keys as the hub ---------- */
+  const get = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+  const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+  const S = { theme: get('hammi-theme', 'auto'), accent: get('hammi-accent', 'orange') };
+  function apply() {
+    if (S.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = S.theme;
+    root.classList.toggle('accent-blue', S.accent === 'blue');
+    document.querySelectorAll('[data-set]').forEach(g => g.querySelectorAll('.sk').forEach(el =>
+      el.querySelector('.led').classList.toggle('on', el.querySelector('button').dataset.v === S[g.dataset.set])));
+  }
+  apply();
+  $('sheet').addEventListener('click', e => {
+    const b = e.target.closest('button'), g = b && b.closest('[data-set]'); if (!g) return;
+    S[g.dataset.set] = b.dataset.v;
+    put(g.dataset.set === 'theme' ? 'hammi-theme' : 'hammi-accent', b.dataset.v === 'auto' ? null : b.dataset.v);
+    apply();
+  });
+  const toggleSheet = open => { $('sheet').hidden = !open; $('set-led').classList.toggle('on', open); $('settings').setAttribute('aria-expanded', open); };
+  $('settings').addEventListener('click', () => toggleSheet($('sheet').hidden));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) toggleSheet(false); });
+  document.addEventListener('click', e => { if (!$('sheet').hidden && !e.target.closest('#sheet, #settings')) toggleSheet(false); });
+
+  /* ---------- talking to the guest book ---------- */
+  const ERR = {
+    bad_name: 'Your name can use letters, numbers, spaces and . _ - \'',
+    name_reserved: 'That name belongs to the owner.',
+    bad_from: 'Keep "from" short.',
+    too_long: 'That is a bit long. 500 characters at most.',
+    too_short: 'Write a little more.',
+    too_many_lines: 'Ten lines at most.',
+    no_links: 'No links, sorry. It keeps the spam out.',
+    not_allowed: 'That has a word the book doesn\'t take.',
+    duplicate: 'That exact note is already in the book.',
+    slow_down: 'One note a minute, please. Try again soon.',
+    busy: 'Lots of notes right now. Try again in a while.',
+    form_expired: 'The page was open too long. Press sign again.',
+    bad_origin: 'This page can\'t sign the book.',
+    offline: 'The guest book is offline right now.',
+  };
+  async function call(method, route, body) {
+    let r;
+    try {
+      r = await fetch(API + route, { method, credentials: 'include', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    } catch (e) { throw Object.assign(new Error('offline'), { offline: true }); }
+    let d = {}; try { d = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(d.error || 'offline');
+    return d;
+  }
+  const say = (t, err) => { $('status').textContent = t || ''; $('status').classList.toggle('err', !!err); };
+
+  let st = { signedIn: false, owner: false, login: false, limits: { message: 500 } };
+  let form = null, oldest = Infinity, total = 0;
+  const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const pad = n => String(n).padStart(4, '0');
+  const stamp = t => { const d = new Date(t); return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const key = (cls, text, fn) => { const b = el('button', 'k ' + cls, text); b.type = 'button'; b.addEventListener('click', fn); return b; };
+
+  function entryEl(e, fresh) {
+    const li = el('li', 'entry' + (fresh ? ' fresh' : '') + (e.hidden || e.held ? ' dim' : ''));
+    li.id = 'n' + e.id;
+    const no = el('div', 'no', 'No.' + pad(e.id)); no.appendChild(el('small', null, stamp(e.at)));
+    const body = el('div');
+    body.appendChild(el('h3', null, e.name));
+    const meta = el('p', 'meta');
+    if (e.from) meta.appendChild(el('span', 'tag', 'from ' + e.from));
+    if (e.nookara) meta.appendChild(el('span', 'tag on', 'nookara'));
+    if (e.held) meta.appendChild(el('span', 'tag on', 'waiting for you'));
+    if (e.hidden) meta.appendChild(el('span', 'tag', 'hidden'));
+    if (meta.childNodes.length) body.appendChild(meta); else body.appendChild(el('div')).style.height = '8px';
+    body.appendChild(el('p', 'msg', e.message));
+    if (e.reply) {
+      const r = el('div', 'reply');
+      r.appendChild(el('span', 'tag on', 'reply · ' + (st.owner_name || 'owner')));
+      r.appendChild(el('p', null, e.reply.text));
+      body.appendChild(r);
+    }
+    if (st.owner) body.appendChild(toolsEl(e, li));
+    li.append(no, body);
+    return li;
+  }
+
+  async function mod(act, payload, li) {
+    try {
+      const d = await call('POST', '/api/owner/' + act, payload);
+      if (act === 'delete') { li.remove(); total = Math.max(0, total - 1); showTotal(); }
+      else li.replaceWith(entryEl(d.entry));
+    } catch (e) { alert(ERR[e.message] || e.message); }
+  }
+  function toolsEl(e, li) {
+    const t = el('div', 'tools');
+    if (e.held) t.appendChild(key('orange', 'approve', () => mod('approve', { id: e.id }, li)));
+    t.appendChild(key('grey', e.reply ? 'edit reply' : 'reply', () => {
+      const box = el('textarea', 'scr'); box.value = e.reply ? e.reply.text : ''; box.maxLength = 500; box.placeholder = 'your reply (empty removes it)';
+      const save = key('orange', 'save reply', () => mod('reply', { id: e.id, text: box.value }, li));
+      t.replaceChildren(box, save, key('grey', 'cancel', () => t.replaceWith(toolsEl(e, li))));
+      box.focus();
+    }));
+    t.appendChild(key('grey', e.hidden ? 'show' : 'hide', () => mod('hide', { id: e.id, hidden: !e.hidden }, li)));
+    t.appendChild(key('black', 'delete', () => { if (confirm('Delete No.' + pad(e.id) + ' for good?')) mod('delete', { id: e.id }, li); }));
+    return t;
+  }
+
+  function showTotal() {
+    $('total').textContent = total;
+    $('total-label').textContent = total === 1 ? 'signature' : 'signatures';
+    $('empty').hidden = !!$('entries').children.length;
+  }
+
+  function renderWho() {
+    const w = $('who'); w.replaceChildren();
+    $('name').readOnly = !!st.signedIn;
+    if (st.signedIn) { $('name').value = st.user; $('name-note').textContent = 'nookara'; }
+    else { if ($('name').readOnly === false && $('name').value === st._lastUser) $('name').value = ''; $('name-note').textContent = ''; }
+    if (!st.login) { w.hidden = true; return; }
+    w.hidden = false;
+    if (st.signedIn) {
+      const p = el('p'); p.append('Signed in with Nookara as ', el('b', null, st.user), st.owner ? '. You can reply to, hide and delete notes.' : '. Your note shows a Nookara mark.');
+      w.append(p, key('grey', 'sign out', async () => { try { const d = await call('POST', '/api/logout', {}); st = { ...st, ...d.state }; renderWho(); load(true); } catch (e) {} }));
+    } else {
+      w.append(el('p', null, 'Have a Nookara account? Sign with it and your note shows a Nookara mark.'),
+        key('grey', 'sign in with nookara', async () => {
+          try { const d = await call('POST', '/api/login', {}); try { sessionStorage.setItem('gb-login', '1'); } catch (e) {} location.href = d.url; }
+          catch (e) { say(ERR[e.message] || 'Nookara sign-in is not available right now.', true); }
+        }));
+    }
+    st._lastUser = st.user;
+  }
+
+  async function load(reset) {
+    try {
+      const d = await call('GET', '/api/entries?limit=20' + (reset ? '' : '&before=' + oldest));
+      st = { ...st, ...d.state }; form = d.form; total = d.total;
+      if (reset) { $('entries').replaceChildren(); oldest = Infinity; renderWho(); }
+      for (const e of d.entries) { $('entries').appendChild(entryEl(e)); oldest = Math.min(oldest, e.id); }
+      $('more').hidden = !d.more;
+      $('waiting').textContent = d.waiting ? '· ' + d.waiting + ' waiting for you' : '';
+      showTotal();
+    } catch (e) {
+      $('total').textContent = '--';
+      $('empty-h').textContent = 'offline'; $('empty-p').textContent = 'The guest book can\'t be reached right now. Try again in a bit.';
+      $('empty').hidden = false;
+    }
+  }
+  $('more-btn').addEventListener('click', () => load(false));
+
+  /* ---------- the form ---------- */
+  const count = () => { const n = [...$('message').value].length; $('count').textContent = n + ' / 500'; $('count').classList.toggle('over', n > 500); };
+  $('message').addEventListener('input', count);
+  $('message').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('form').requestSubmit(); });
+  try { const n = localStorage.getItem('gb-name'); if (n) $('name').value = n; } catch (e) {}
+  $('form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const name = $('name').value.trim(), message = $('message').value.trim();
+    if (!name) { say('Write your name first.', true); $('name').focus(); return; }
+    if (!message) { say('Write a note first.', true); $('message').focus(); return; }
+    $('send').disabled = true; say('signing…');
+    try {
+      const d = await call('POST', '/api/sign', { name, from: $('from').value, message, website: $('website').value, form });
+      if (!st.signedIn) try { localStorage.setItem('gb-name', name); } catch (e) {}
+      $('message').value = ''; count();
+      if (d.held || !d.entry) say('Thanks. Your note shows up once it\'s checked.');
+      else { say('Thanks for signing.'); $('entries').prepend(entryEl(d.entry, true)); total += 1; showTotal(); }
+    } catch (e) { say(ERR[e.message] || 'Something went wrong. Try again.', true); }
+    finally { $('send').disabled = false; call('GET', '/api/entries?limit=1').then(d => { form = d.form; }).catch(() => {}); }
+  });
+
+  /* ---------- coming back from Nookara ---------- */
+  (async () => {
+    const h = new URLSearchParams(location.hash.slice(1));
+    const code = h.get('nookara_code'), grant = h.get('nookara_grant');
+    if (code && grant) {
+      history.replaceState(null, '', location.pathname + location.search);
+      try { await call('POST', '/api/login/finish', { code, grant }); say('Signed in with Nookara.'); }
+      catch (e) { say('Nookara sign-in didn\'t finish. Try again.', true); }
+    }
+    load(true);
+  })();
+})();
+</script>
+</body>
+</html>

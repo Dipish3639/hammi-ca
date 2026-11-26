@@ -271,6 +271,9 @@
   .now .nside p { margin: 10px 0 0; font-size: 13.5px; }
   .now .nside .k { height: 34px; padding: 0 14px; margin-top: 12px; }
   .status-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 13.5px; }
+  .gbk .in p { margin: 0; font-size: 14px; color: var(--g-ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .gbk .in p.gbn { margin-top: 8px; font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--g-mute); }
+  .gbk .in p.gbn:empty { display: none; }
   @media (max-width: 1040px) { .cols { grid-template-columns: 180px minmax(0, 1fr); } .now { grid-column: 1 / -1; position: static; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
   @media (max-width: 700px) {
     .container { max-width: calc(100% - 32px); }
@@ -320,6 +323,7 @@
     <nav class="keys" aria-label="Places">
       <div class="sub">talk</div>
       <div class="row"><span class="led on"></span><a class="k orange" href="/chat/">Hammi Chat<small>↗</small></a></div>
+      <div class="row"><span class="led"></span><a class="k grey" href="/guestbook/">Guest book<small>↗</small></a></div>
       <div class="sub">live</div>
       <div class="row"><span class="led on"></span><a class="k black" href="https://wall.hammi.ca/">Pixel Wall<small>↗</small></a></div>
       <div class="row"><span class="led on"></span><a class="k black" href="https://race.hammi.ca/">Hammi 24<small>↗</small></a></div>
@@ -334,6 +338,17 @@
 
     <main class="feed" id="news">
       <h2 class="legend"><span>log</span><span class="ln"></span><span class="dim">newest first</span></h2>
+
+      <article class="post" id="guestbook">
+        <div class="date">26<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Site</span></p>
+          <h3><a href="/guestbook/">Sign the guest book</a></h3>
+          <p>hammi.ca has a guest book now. Leave your name, where you're from and a short note. Every signature gets a number, and I'll reply to some of them.</p>
+          <div class="play"><a class="k orange" href="/guestbook/">Sign the guest book</a></div>
+          <p class="fine">Plain text only. Signing in with Nookara is optional and adds a Nookara mark to your note.</p>
+        </div>
+      </article>
 
       <article class="post">
         <div class="date">27<small>NOV<span>2026</span></small></div>
@@ -456,6 +471,7 @@
         <div class="in"><div class="clk" id="clock" aria-hidden="true">00:00</div><p>Latest: <b>Hammi Chat</b>, a chat app for Ember servers.</p></div></section>
       <a class="display hide-s" href="https://display.hammi.ca/" aria-label="LED Wall"><div class="bar"><span class="lit">● on</span><span>led wall</span><span class="r">display.hammi.ca</span></div><div class="in" id="led" style="padding:12px"></div></a>
       <a class="display hide-s" href="https://wall.hammi.ca/" aria-label="Pixel Wall"><div class="bar"><span class="lit">● live</span><span>pixel wall</span><span class="r">128 × 64</span></div><canvas id="wall" width="48" height="32"></canvas></a>
+      <a class="display gbk" href="/guestbook/" aria-label="Guest book"><div class="bar"><span class="lit">● gb-1</span><span>guest book</span><span class="r" id="gb-no">sign it</span></div><div class="in"><p id="gb-msg">Leave your name and a short note.</p><p class="gbn" id="gb-who"></p></div></a>
       <section class="nside" id="house-edge"><h4 class="legend"><span>coming soon</span><span class="ln"></span></h4>
         <p><b style="font-weight:400">House Edge</b>: a small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Nookara account.</p>
         <span class="k grey off" aria-disabled="true">Download soon</span></section>
@@ -469,7 +485,7 @@
   </div>
 
   <footer class="footer">
-    <nav><a href="#top">Home</a><a href="/chat/">Hammi Chat</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="https://display.hammi.ca/">LED Wall</a><a href="#about">About</a></nav>
+    <nav><a href="#top">Home</a><a href="/chat/">Hammi Chat</a><a href="/guestbook/">Guest book</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="https://display.hammi.ca/">LED Wall</a><a href="#about">About</a></nav>
     <span>&copy; <span id="year">2026</span> hammi.ca</span>
     <span class="end">made by hand · hm-1</span>
   </footer>
@@ -522,6 +538,13 @@
   }
   led(); if (!reduce) setInterval(() => { if (!document.hidden) led(); }, 60);
 
+  /* ---------- newest guest book note ---------- */
+  fetch('https://guestbook.hammi.ca/api/entries?limit=1').then(r => r.json()).then(d => {
+    const e = d.entries && d.entries[0]; if (!e) return;
+    $('gb-no').textContent = 'No.' + String(e.id).padStart(4, '0');
+    $('gb-msg').textContent = '\u201c' + e.message + '\u201d';
+    $('gb-who').textContent = e.name + (e.from ? ' · ' + e.from : '');
+  }).catch(() => {});
   /* ---------- tiny Pixel Wall that paints itself ---------- */
   const wx = $('wall').getContext('2d');
   const PAL = ['#ff5a1f', '#ff8a5c', '#3c9eff', '#7cc0ff', '#e9e9e6', '#bdbdb9', '#6f6f6c', '#ffc23c', '#2fbf71'];
