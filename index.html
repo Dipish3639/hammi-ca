@@ -226,34 +226,64 @@
   .sk .k { width: 48px; height: 28px; font-size: 10px; }
   .sk .led { width: 5px; height: 5px; }
 
-  /* ---------- narrow screens ---------- */
-  @media (max-width: 900px) {
-    .page { grid-template-columns: minmax(0, 1fr); }
-    .side { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  }
+  /* ---------- feed layout: keys | log | now ---------- */
+  .container { width: 1240px; }
+  .top { position: relative; padding: 34px 0 34px; }
+  .cols { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; gap: 44px; }
+  .keys { position: sticky; top: 24px; align-self: start; display: grid; gap: 12px; }
+  .keys .row { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: center; gap: 10px; }
+  .keys .k { height: 44px; padding: 0 14px; display: grid; grid-template-columns: 1fr auto; justify-items: start; width: 100%; }
+  .keys .k small { font: 400 9px var(--mono); letter-spacing: .08em; opacity: .6; }
+  .keys .sub { font: 400 9.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--print-dim); margin: 12px 0 0 20px; }
+  .keys .sub:first-child { margin-top: 0; }
+  .feed h2.legend { margin-bottom: 4px; }
+  .post { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 22px; padding: 28px 0; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  .post .date { font: 500 30px/.9 var(--mono); letter-spacing: -.05em; color: var(--print); }
+  .post .date small { display: block; margin-top: 6px; font: 400 10px var(--mono); letter-spacing: .1em; color: var(--print-dim); }
+  .post .date small span { display: block; margin-top: 2px; }
+  .feed .post:first-of-type .date { color: var(--orange-ink); }
+  .post h3 { margin: 0 0 8px; font: 300 28px/1.1 var(--sans); letter-spacing: -.035em; }
+  .post h3 a { color: inherit; text-decoration: none; } .post h3 a:hover { color: var(--orange-ink); }
+  .post p { margin: 0 0 12px; max-width: 620px; }
+  .post .fine { font-size: 13px; color: var(--print-dim); }
+  .post .meta { margin-bottom: 10px; }
+  .post .shot { display: block; aspect-ratio: 2 / 1; max-width: 620px; margin: 6px 0 16px; }
+  .post .shot img, .post .shot canvas { display: block; width: 100%; height: 100%; object-fit: contain; padding: 4%; }
+  .post .shot canvas { padding: 0; object-fit: cover; image-rendering: pixelated; }
+  .post .play { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 12px; }
+  .post .play .k { height: 38px; padding: 0 16px; }
+  .post ul.changes { list-style: none; margin: 0 0 14px; padding: 0; max-width: 620px; display: grid; gap: 6px; }
+  .post ul.changes li { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 8px; font-size: 14px; }
+  .post ul.changes li::before { content: ""; width: 5px; height: 5px; margin-top: 9px; border-radius: 50%; background: var(--orange); }
+  .post.small { padding: 16px 0; }
+  .post.small .date { font-size: 18px; }
+  .post.small p { margin: 0; }
+  .now { position: sticky; top: 24px; align-self: start; display: grid; gap: 20px; }
+  .now .bar { display: flex; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--g-line); font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--g-dim); white-space: nowrap; }
+  .now .bar .lit { color: var(--orange); } .now .bar .r { margin-left: auto; }
+  .now .in { padding: 16px; }
+  .now .clk { font: 500 52px/1 var(--mono); letter-spacing: -.06em; color: var(--g-ink); }
+  .now .clk s { text-decoration: none; color: #2e2e2f; }
+  .now .in p { margin: 10px 0 0; font-size: 13px; color: var(--g-mute); }
+  .now .in b { color: var(--g-ink); font-weight: 400; }
+  .now a.display { text-decoration: none; }
+  .now canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+  .now .nside p { margin: 10px 0 0; font-size: 13.5px; }
+  .now .nside .k { height: 34px; padding: 0 14px; margin-top: 12px; }
+  .status-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 13.5px; }
+  @media (max-width: 1040px) { .cols { grid-template-columns: 180px minmax(0, 1fr); } .now { grid-column: 1 / -1; position: static; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
   @media (max-width: 700px) {
     .container { max-width: calc(100% - 32px); }
+    .cols { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+    .keys { position: static; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+    .keys .sub { display: none; }
+    .now { grid-template-columns: minmax(0, 1fr); }
+    .post { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .post .date small span { display: inline; margin-left: 6px; }
+    .post .date small { display: inline; margin-left: 8px; }
     .spec { display: none; }
-    .game { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-    .shot { max-width: 360px; }
-    .nav { gap: 10px; }
-    .nav .k { width: auto; padding: 0 14px; }
-    .nav .sep { display: none; }
   }
-  @media (max-width: 560px) {
-    .top { padding: 26px 0 20px; gap: 12px; }
-    .brand svg { width: 40px; height: 40px; }
-    .brand h1 { font-size: 30px; }
-    .tier.opt { display: none; }
-    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .nav .k { width: 100%; padding: 0 6px; }
-    .ticker .clock { display: none; }
-    .hero { padding: 20px 18px; }
-    .hero h2 { font-size: 25px; }
-    .coord, .cross { display: none; }
-    .sheet { top: 80px; }
-    .footer .end { margin-left: 0; }
-  }
+  @media (max-width: 560px) { .sheet { top: 84px; } }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -266,7 +296,7 @@
   <div class="ruler"></div><div class="ruler v"></div>
   <svg class="big" viewBox="0 0 100 100"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><circle cx="50" cy="50" r="9" fill="none" stroke="currentColor" stroke-width=".4"/><path d="M50 30v40M30 50h40" stroke="currentColor" stroke-width=".15" stroke-dasharray="1 1"/></svg>
   <span class="cross" style="left:18px;top:18px"></span><span class="cross" style="right:18px;top:18px"></span><span class="cross" style="left:18px;bottom:18px"></span><span class="cross" style="right:18px;bottom:18px"></span>
-  <span class="coord" style="left:44px;top:22px">a1</span><span class="coord" style="right:44px;top:22px">a8</span><span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · hm-1 rev 4</span>
+  <span class="coord" style="left:44px;top:22px">a1</span><span class="coord" style="right:44px;top:22px">a8</span><span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · hm-1 rev 5</span>
 </div>
 
 <div class="container" id="top">
@@ -275,9 +305,8 @@
       <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="var(--orange)"/></svg>
       <h1>hammi<i>.</i>ca</h1>
     </a>
-    <div class="spec"><span><b>hm-1</b> · games &amp; stuff</span><span>made by hand · beta</span></div>
+    <div class="spec"><span><b>hm-1</b> · notes &amp; things I make</span><span>made by hand · beta</span></div>
     <div class="tiers">
-      <div class="tier opt"><span class="led" id="motion-led"></span><button class="k2 k" id="motion" aria-pressed="true"><span class="t">news</span><span class="b">scroll</span></button></div>
       <div class="tier"><span class="led" id="set-led"></span><button class="k2 k" id="settings" aria-expanded="false" aria-controls="sheet"><span class="t">settings</span><span class="b">system</span></button></div>
     </div>
     <div class="sheet" id="sheet" hidden role="dialog" aria-label="Settings">
@@ -287,197 +316,150 @@
     </div>
   </header>
 
-  <ul class="nav" id="nav" aria-label="Sections">
-    <li><span class="led on"></span><a class="k orange" href="#top">Home</a></li>
-    <li><span class="led"></span><a class="k black" href="#games">Games</a></li>
-    <li><span class="led"></span><a class="k black" href="https://wall.hammi.ca/">Pixel Wall</a></li>
-    <li><span class="led"></span><a class="k black" href="/chat/">Chat</a></li>
-    <li><span class="led"></span><a class="k black" href="#about">About</a></li>
-    <li class="sep" aria-hidden="true"></li>
-    <li><span class="led"></span><a class="k grey" href="#news">What's new</a></li>
-  </ul>
+  <div class="cols">
+    <nav class="keys" aria-label="Places">
+      <div class="sub">talk</div>
+      <div class="row"><span class="led on"></span><a class="k orange" href="/chat/">Hammi Chat<small>↗</small></a></div>
+      <div class="sub">live</div>
+      <div class="row"><span class="led on"></span><a class="k black" href="https://wall.hammi.ca/">Pixel Wall<small>↗</small></a></div>
+      <div class="row"><span class="led on"></span><a class="k black" href="https://race.hammi.ca/">Hammi 24<small>↗</small></a></div>
+      <div class="row"><span class="led on"></span><a class="k black" href="https://display.hammi.ca/">LED Wall<small>↗</small></a></div>
+      <div class="sub">play &amp; make</div>
+      <div class="row"><span class="led"></span><a class="k grey" href="/orbit-climb/">Orbit Climb<small>↗</small></a></div>
+      <div class="row"><span class="led"></span><a class="k grey" href="/loose-thread/">Loose Thread<small>↗</small></a></div>
+      <div class="row"><span class="led"></span><a class="k grey" href="/loopsprout/">Loopsprout<small>↗</small></a></div>
+      <div class="row"><span class="led"></span><a class="k grey" href="#gameshelf">GameShelf<small>↓</small></a></div>
+      <div class="row"><span class="led on slow"></span><a class="k grey" href="#house-edge">House Edge<small>soon</small></a></div>
+    </nav>
 
-  <div class="ticker display" aria-label="Latest news">
-    <span class="label"><span class="led on"></span>news</span>
-    <div class="track">
-      <div class="run" id="run">
-        <span><b>NOV 26</b>hammi.ca has a new look, to match Hammi Chat.</span>
-        <span><b>NOV 26</b>New: Hammi Chat, a chat app for Ember servers.</span>
-        <span><b>NOV 22</b>Orbit Climb has 2-player split-screen co-op.</span>
-        <span><b>NOV 22</b>Orbit Climb has sound now.</span>
-        <span><b>NOV 22</b>Orbit Climb now works with a game controller.</span>
-        <span><b>NOV 22</b>Orbit Climb update: three worlds and a final boss.</span>
-        <span><b>NOV 22</b>New game: Orbit Climb. Parkour up the tower.</span>
-        <span><b>NOV 21</b>New: Loopsprout. Hum a tune and make music.</span>
-        <span><b>NOV 19</b>New game: Loose Thread. Play it in your browser.</span>
-        <span><b>NOV 19</b>GameShelf for Windows is out.</span>
-        <span><b>NOV 5</b>The site got a new look.</span>
-        <span><b>NOV 3</b>Velora is now called Nookara.</span>
-        <span><b>OCT 27</b>Pixel Wall is open. Come paint.</span>
-        <span><b>SOON</b>House Edge for Windows.</span>
-      </div>
-    </div>
-    <span class="clock" id="clock" aria-hidden="true">00:00</span>
-  </div>
+    <main class="feed" id="news">
+      <h2 class="legend"><span>log</span><span class="ln"></span><span class="dim">newest first</span></h2>
 
-  <div class="page">
-    <main>
-      <section class="hero display">
-        <div class="row"><span class="lit">● live</span><span>hammi.ca</span><span class="count">out now<b>06</b></span></div>
-        <h2>Welcome to hammi.ca</h2>
-        <p>Small games for the PC and the browser, a music maker, a shelf for all your games, a chat app and a wall you can paint on.</p>
-      </section>
+      <article class="post">
+        <div class="date">26<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">site</span></p>
+          <h3>hammi.ca is now a hub</h3>
+          <p>The whole site has a new look to match Hammi Chat: a grey drawing surface, keys that press, small lights and black screens. It's also laid out as a log now, with keys on the side for every place on hammi.ca. The settings key at the top switches between light and dark mode.</p>
+        </div>
+      </article>
 
-      <h2 class="legend section-title" id="games"><span>games</span><span class="ln"></span><span class="dim">07</span></h2>
-      <ul class="games">
-        <li class="game">
-          <div class="head legend"><span class="num">01</span><h3><a href="/orbit-climb/">orbit climb</a></h3><span class="ln"></span><span class="dim">browser · 3d</span></div>
-          <div class="shot">
-            <a class="display" href="/orbit-climb/" tabindex="-1" aria-hidden="true"><img src="img/orbit-climb.png" width="600" height="400" alt=""></a>
-          </div>
-          <div>
-            <p class="name">Orbit Climb</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">3D</span><span class="tag">Parkour</span><span class="tag">Controller</span><span class="tag">2 players</span></p>
-            <p class="desc">Climb through three worlds before the flood catches you: the Concrete Spire, Water World and Ember Peak. Wall-run, double jump and air dash from ledge to ledge, beat the boss at the top of every layer, and take down the final boss to conquer the world. Every jump, dash and boss has its own sound. Play alone or with a friend in split-screen co-op. Power cells you collect buy permanent upgrades in the Workshop.</p>
-            <div class="play"><a class="k orange" href="/orbit-climb/">Play now</a></div>
-            <p class="fine">Plays in your browser on a computer, with keyboard and mouse or a game controller. Co-op needs a controller for player 2. Press M to turn the sound on or off.</p>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">02</span><h3><a href="/loopsprout/">loopsprout</a></h3><span class="ln"></span><span class="dim">browser · music</span></div>
-          <div class="shot">
-            <a class="display" href="/loopsprout/" tabindex="-1" aria-hidden="true"><img src="img/loopsprout.png" width="600" height="400" alt=""></a>
-          </div>
-          <div>
-            <p class="name">Loopsprout</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Music</span></p>
-            <p class="desc">Make a little loop of music. Stack layers of instruments and drums, hum a tune into your mic and it turns into notes, then hit play. Every note is locked to the key, so nothing sounds wrong.</p>
-            <div class="play"><a class="k orange" href="/loopsprout/">Make music</a></div>
-            <p class="fine">Plays in your browser. Humming needs a microphone; you can upload a recording instead. Your loop is saved in your browser.</p>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">03</span><h3><a href="/loose-thread/">loose thread</a></h3><span class="ln"></span><span class="dim">browser · pixel art</span></div>
-          <div class="shot">
-            <a class="display" href="/loose-thread/" tabindex="-1" aria-hidden="true"><img src="img/loose-thread.png" width="600" height="400" alt="" style="image-rendering: pixelated"></a>
-          </div>
-          <div>
-            <p class="name">Loose Thread</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Pixel art</span></p>
-            <p class="desc">You have a spool of thread and no weapons. Run circles around creatures and cross your own thread to pull the loop tight and tie them up. Light four lanterns in each room to open the door, and get through one long afternoon.</p>
-            <div class="play"><a class="k orange" href="/loose-thread/">Play now</a></div>
-            <p class="fine">Plays in your browser. Keyboard on a computer; touch controls on a phone.</p>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">04</span><h3>house edge</h3><span class="ln"></span><span class="dim">windows · 3d</span></div>
-          <div class="shot">
-            <span class="display"><img src="img/house-edge.png" width="768" height="512" alt="The House Edge logo."></span>
-          </div>
-          <div>
-            <p class="name">House Edge</p>
-            <p class="meta"><span class="tag">Windows</span><span class="tag">3D</span><span class="tag">Online</span></p>
-            <p class="desc">A small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Nookara account.</p>
-            <div class="play"><span class="k grey off" aria-disabled="true">Download</span><span class="note"><span class="led on slow"></span>Coming soon</span></div>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">05</span><h3><a href="https://wall.hammi.ca/">pixel wall</a></h3><span class="ln"></span><span class="dim">browser · multiplayer</span></div>
-          <div class="shot">
-            <a class="display" href="https://wall.hammi.ca/" tabindex="-1" aria-hidden="true"><canvas id="wall" width="48" height="32"></canvas></a>
-            <div class="cap"><span>wall.hammi.ca</span><span>128 × 64</span></div>
-          </div>
-          <div>
-            <p class="name">Pixel Wall</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Multiplayer</span></p>
-            <p class="desc">One shared canvas that anyone can paint on. Every pixel costs Nookara credits, and you sign in with a Nookara account to buy them. Your pixels stay on the wall for everyone to see.</p>
-            <div class="play"><a class="k orange" href="https://wall.hammi.ca/">Open the wall</a></div>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">06</span><h3>gameshelf</h3><span class="ln"></span><span class="dim">windows · launcher</span></div>
-          <div class="shot">
-            <span class="display"><img src="img/gameshelf.png" width="512" height="512" alt="The GameShelf app icon: a play button on a shelf of games."></span>
-          </div>
-          <div>
-            <p class="name">GameShelf</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Windows</span><span class="tag">Launcher</span></p>
-            <p class="desc">All your games on one shelf, with big box art. Your Steam and Epic games show up by themselves, and when you add a folder of game files GameShelf works out which console each one is for and sets up an emulator to play it. No games are included; bring your own.</p>
-            <div class="play"><a class="k orange" href="https://github.com/Dipish3639/hammi-ca/releases/download/gameshelf-win-0.1.2/GameShelf-0.1.2-win-x64.zip">Download for Windows</a></div>
-            <p class="fine">Version 0.1.2, 64-bit Windows, 158 MB zip. Nothing to install: unzip it anywhere and run GameShelf.exe.</p>
-          </div>
-        </li>
-        <li class="game">
-          <div class="head legend"><span class="num">07</span><h3><a href="/chat/">hammi chat</a></h3><span class="ln"></span><span class="dim">browser · chat</span></div>
-          <div class="shot">
-            <a class="display" href="/chat/" tabindex="-1" aria-hidden="true"><img src="img/hammi-chat.png" width="600" height="400" alt=""></a>
-          </div>
-          <div>
-            <p class="name">Hammi Chat</p>
-            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Chat</span></p>
-            <p class="desc">A chat app for Ember servers, made here on hammi.ca. Sign in with your Nookara account to talk in your servers and send direct messages. Encrypted DMs, signed messages and custom emoji all work, and you can do almost everything from the keyboard.</p>
-            <div class="play"><a class="k orange" href="/chat/">Open Hammi Chat</a><a class="k grey" href="/chat/?demo">Try the demo</a></div>
-            <p class="fine">Runs in your browser on a computer or phone. Signing in is limited to testers while the app waits for Nookara to verify it; anyone can try the demo.</p>
-          </div>
-        </li>
-      </ul>
+      <article class="post" id="chat">
+        <div class="date">26<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Chat</span></p>
+          <h3><a href="/chat/">Hammi Chat is out</a></h3>
+          <a class="display shot" href="/chat/" tabindex="-1" aria-hidden="true"><img src="img/hammi-chat.png" width="600" height="400" alt=""></a>
+          <p>A chat app for Ember servers, made here on hammi.ca. Sign in with your Nookara account to talk in your servers and send direct messages. Encrypted DMs, signed messages and custom emoji all work, and you can do almost everything from the keyboard.</p>
+          <div class="play"><a class="k orange" href="/chat/">Open Hammi Chat</a><a class="k grey" href="/chat/?demo">Try the demo</a></div>
+          <p class="fine">Runs in your browser on a computer or phone. Signing in is limited to testers while the app waits for Nookara to verify it; anyone can try the demo.</p>
+        </div>
+      </article>
+
+      <article class="post" id="orbit-climb">
+        <div class="date">22<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">3D</span><span class="tag">Parkour</span><span class="tag">Controller</span><span class="tag">2 players</span></p>
+          <h3><a href="/orbit-climb/">New game: Orbit Climb</a></h3>
+          <a class="display shot" href="/orbit-climb/" tabindex="-1" aria-hidden="true"><img src="img/orbit-climb.png" width="600" height="400" alt=""></a>
+          <p>Climb through three worlds before the flood catches you: the Concrete Spire, Water World and Ember Peak. Wall-run, double jump and air dash from ledge to ledge, beat the boss at the top of every layer, and take down the final boss to conquer the world. Power cells you collect buy permanent upgrades in the Workshop.</p>
+          <ul class="changes">
+            <li>2-player split-screen co-op. Player 2 uses a controller, you share the flood and the bosses, and if one of you goes down, you come back next to your partner after 5 seconds.</li>
+            <li>Sound: effects for jumps, pickups and bosses, and a low hum for each world. Press M to mute.</li>
+            <li>Works with a game controller, menus included. Keyboard and mouse still work too.</li>
+            <li>Three worlds to pick from, a final boss in each, and the Workshop on the main menu.</li>
+          </ul>
+          <div class="play"><a class="k orange" href="/orbit-climb/">Play Orbit Climb</a></div>
+          <p class="fine">Plays in your browser on a computer, with keyboard and mouse or a game controller. Co-op needs a controller for player 2.</p>
+        </div>
+      </article>
+
+      <article class="post" id="loopsprout">
+        <div class="date">21<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Music</span></p>
+          <h3><a href="/loopsprout/">New: Loopsprout</a></h3>
+          <a class="display shot" href="/loopsprout/" tabindex="-1" aria-hidden="true"><img src="img/loopsprout.png" width="600" height="400" alt=""></a>
+          <p>Make a little loop of music. Stack layers of instruments and drums, hum a tune into your mic and it turns into notes, then hit play. Every note is locked to the key, so nothing sounds wrong.</p>
+          <div class="play"><a class="k orange" href="/loopsprout/">Make music</a></div>
+          <p class="fine">Plays in your browser. Humming needs a microphone; you can upload a recording instead. Your loop is saved in your browser.</p>
+        </div>
+      </article>
+
+      <article class="post" id="loose-thread">
+        <div class="date">19<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Pixel art</span></p>
+          <h3><a href="/loose-thread/">New game: Loose Thread</a></h3>
+          <a class="display shot" href="/loose-thread/" tabindex="-1" aria-hidden="true"><img src="img/loose-thread.png" width="600" height="400" alt="" style="image-rendering: pixelated"></a>
+          <p>You have a spool of thread and no weapons. Run circles around creatures and cross your own thread to pull the loop tight and tie them up. Light four lanterns in each room to open the door, and get through one long afternoon.</p>
+          <div class="play"><a class="k orange" href="/loose-thread/">Play Loose Thread</a></div>
+          <p class="fine">Plays in your browser. Keyboard on a computer; touch controls on a phone.</p>
+        </div>
+      </article>
+
+      <article class="post" id="gameshelf">
+        <div class="date">19<small>NOV<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">New</span><span class="tag">Windows</span><span class="tag">Launcher</span></p>
+          <h3>GameShelf for Windows is out</h3>
+          <span class="display shot"><img src="img/gameshelf.png" width="512" height="512" alt="The GameShelf app icon: a play button on a shelf of games."></span>
+          <p>All your games on one shelf, with big box art. Your Steam and Epic games show up by themselves, and when you add a folder of game files GameShelf works out which console each one is for and sets up an emulator to play it. No games are included; bring your own.</p>
+          <div class="play"><a class="k orange" href="https://github.com/Dipish3639/hammi-ca/releases/download/gameshelf-win-0.1.2/GameShelf-0.1.2-win-x64.zip">Download for Windows</a></div>
+          <p class="fine">Version 0.1.2, 64-bit Windows, 158 MB zip. Nothing to install: unzip it anywhere and run GameShelf.exe.</p>
+        </div>
+      </article>
+
+      <article class="post small">
+        <div class="date">05<small>NOV<span>2026</span></small></div>
+        <div><p>The site got a new look.</p></div>
+      </article>
+
+      <article class="post small">
+        <div class="date">03<small>NOV<span>2026</span></small></div>
+        <div><p>Velora is now called Nookara.</p></div>
+      </article>
+
+      <article class="post" id="race">
+        <div class="date">28<small>OCT<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">Live</span><span class="tag">Browser</span><span class="tag">Race</span></p>
+          <h3><a href="https://race.hammi.ca/">Hammi 24</a></h3>
+          <p>A 24-hour endurance race that runs in real time. Every car has its own AI driver with its own thoughts and strategy for tyres, fuel and driver swaps. Sign in with Nookara to enter a team during the break between races.</p>
+          <div class="play"><a class="k orange" href="https://race.hammi.ca/">Watch the race</a></div>
+        </div>
+      </article>
+
+      <article class="post" id="pixel-wall">
+        <div class="date">27<small>OCT<span>2026</span></small></div>
+        <div>
+          <p class="meta"><span class="tag new">Live</span><span class="tag">Browser</span><span class="tag">Multiplayer</span></p>
+          <h3><a href="https://wall.hammi.ca/">Pixel Wall is open. Come paint!</a></h3>
+          <p>One shared canvas that anyone can paint on. Every pixel costs Nookara credits, and you sign in with a Nookara account to buy them. Your pixels stay on the wall for everyone to see.</p>
+          <div class="play"><a class="k orange" href="https://wall.hammi.ca/">Open the wall</a></div>
+        </div>
+      </article>
     </main>
 
-    <aside class="side">
-      <section id="about">
-        <h4 class="legend"><span>about</span><span class="ln"></span></h4>
-        <div class="in"><p>Home of a few small games. Six are out right now, and more are on the way.</p></div>
-      </section>
-
-      <section>
-        <h4 class="legend"><span>games</span><span class="ln"></span><span class="dim">07</span></h4>
-        <div class="in">
-          <ul class="links">
-            <li><a href="/orbit-climb/"><span class="led"></span>Orbit Climb</a></li>
-            <li><a href="/loopsprout/"><span class="led"></span>Loopsprout</a></li>
-            <li><a href="/loose-thread/"><span class="led"></span>Loose Thread</a></li>
-            <li><a href="#games"><span class="led"></span>House Edge</a></li>
-            <li><a href="https://wall.hammi.ca/"><span class="led"></span>Pixel Wall</a></li>
-            <li><a href="#games"><span class="led"></span>GameShelf</a></li>
-            <li><a href="/chat/"><span class="led"></span>Hammi Chat</a></li>
-          </ul>
-        </div>
-      </section>
-
-      <section>
-        <h4 class="legend"><span>server status</span><span class="ln"></span></h4>
-        <div class="in">
-          <div class="status-row"><span class="led on" aria-hidden="true"></span>Pixel Wall: online</div>
-          <div class="status-row"><span class="led on" aria-hidden="true"></span>GameShelf download: ready</div>
-          <div class="status-row"><span class="led on slow" aria-hidden="true"></span>House Edge download: soon</div>
-        </div>
-      </section>
-
-      <section id="news">
-        <h4 class="legend"><span>what's new</span><span class="ln"></span><span class="dim">13</span></h4>
-        <div class="in">
-          <ul class="news">
-            <li><time datetime="2026-11-26">Nov 26, 2026</time>hammi.ca has a new look, to match Hammi Chat. There is a settings key at the top for light and dark mode.</li>
-            <li><time datetime="2026-11-26">Nov 26, 2026</time>New: Hammi Chat, a chat app for Ember servers. Sign in with Nookara, or try the demo. Find it under Games.</li>
-            <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb has 2-player split-screen co-op. Player 2 uses a controller, you share the flood and the bosses, and if one of you goes down, you come back next to your partner after 5 seconds.</li>
-            <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb has sound now: effects for jumps, pickups and bosses, and a low hum for each world. Press M to mute.</li>
-            <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb now works with a game controller, menus included. Keyboard and mouse still work too.</li>
-            <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb update: pick from three worlds (Concrete Spire, Water World, Ember Peak), beat the final boss to conquer each one, and spend cells in the Workshop on the main menu.</li>
-            <li><time datetime="2026-11-22">Nov 22, 2026</time>New game: Orbit Climb, a 3D parkour climb with a boss on every layer. Play it in your browser under Games.</li>
-            <li><time datetime="2026-11-21">Nov 21, 2026</time>New: Loopsprout, a music maker. Hum a tune and it turns into notes. Find it under Games.</li>
-            <li><time datetime="2026-11-19">Nov 19, 2026</time>New game: Loose Thread. Play it in your browser under Games.</li>
-            <li><time datetime="2026-11-19">Nov 19, 2026</time>GameShelf for Windows is out. Download it under Games.</li>
-            <li><time datetime="2026-11-05">Nov 5, 2026</time>The site got a new look.</li>
-            <li><time datetime="2026-11-03">Nov 3, 2026</time>Velora is now called Nookara.</li>
-            <li><time datetime="2026-10-27">Oct 27, 2026</time>Pixel Wall is open. Come paint!</li>
-          </ul>
-        </div>
-      </section>
+    <aside class="now">
+      <section class="display"><div class="bar"><span class="lit">● now</span><span>hammi.ca</span></div>
+        <div class="in"><div class="clk" id="clock" aria-hidden="true">00:00</div><p>Latest: <b>Hammi Chat</b>, a chat app for Ember servers.</p></div></section>
+      <a class="display hide-s" href="https://display.hammi.ca/" aria-label="LED Wall"><div class="bar"><span class="lit">● on</span><span>led wall</span><span class="r">display.hammi.ca</span></div><div class="in" id="led" style="padding:12px"></div></a>
+      <a class="display hide-s" href="https://wall.hammi.ca/" aria-label="Pixel Wall"><div class="bar"><span class="lit">● live</span><span>pixel wall</span><span class="r">128 × 64</span></div><canvas id="wall" width="48" height="32"></canvas></a>
+      <section class="nside" id="house-edge"><h4 class="legend"><span>coming soon</span><span class="ln"></span></h4>
+        <p><b style="font-weight:400">House Edge</b>: a small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Nookara account.</p>
+        <span class="k grey off" aria-disabled="true">Download soon</span></section>
+      <section class="nside"><h4 class="legend"><span>status</span><span class="ln"></span></h4><div style="margin-top:10px">
+        <div class="status-row"><span class="led on" aria-hidden="true"></span>Pixel Wall: online</div>
+        <div class="status-row"><span class="led on" aria-hidden="true"></span>GameShelf download: ready</div>
+        <div class="status-row"><span class="led on slow" aria-hidden="true"></span>House Edge download: soon</div></div></section>
+      <section class="nside" id="about"><h4 class="legend"><span>about</span><span class="ln"></span></h4>
+        <p>hammi.ca is where I put the things I build: a chat app, a shared pixel wall, a 24-hour AI race, an LED wall and a few small games.</p></section>
     </aside>
   </div>
 
   <footer class="footer">
-    <nav><a href="#top">Home</a><a href="#games">Games</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="/chat/">Hammi Chat</a><a href="#about">About</a></nav>
+    <nav><a href="#top">Home</a><a href="/chat/">Hammi Chat</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="https://display.hammi.ca/">LED Wall</a><a href="#about">About</a></nav>
     <span>&copy; <span id="year">2026</span> hammi.ca</span>
     <span class="end">made by hand · hm-1</span>
   </footer>
@@ -490,28 +472,19 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   $('year').textContent = new Date().getFullYear();
 
-  /* ---------- ticker: repeat the items once so the loop is seamless ---------- */
-  const run = $('run');
-  [...run.children].forEach(n => { const c = n.cloneNode(true); c.setAttribute('aria-hidden', 'true'); run.appendChild(c); });
-
-  /* ---------- clock on the news display ---------- */
+  /* ---------- clock ---------- */
   const tick = () => { const d = new Date(), t = d.toTimeString(); $('clock').innerHTML = t.slice(0, 2) + (d.getSeconds() % 2 ? '<s>:</s>' : ':') + t.slice(3, 5); };
   tick(); setInterval(tick, 1000);
 
-  /* ---------- settings: mode, accent, news scroll ---------- */
+  /* ---------- settings: mode and accent ---------- */
   const get = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
   const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
-  const S = { theme: get('hammi-theme', 'auto'), accent: get('hammi-accent', 'orange'), scroll: get('hammi-ticker', 'on') };
+  const S = { theme: get('hammi-theme', 'auto'), accent: get('hammi-accent', 'orange') };
   function apply() {
     if (S.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = S.theme;
     root.classList.toggle('accent-blue', S.accent === 'blue');
-    document.body.classList.toggle('still', S.scroll === 'off');
     document.querySelectorAll('[data-set]').forEach(g => g.querySelectorAll('.sk').forEach(el =>
       el.querySelector('.led').classList.toggle('on', el.querySelector('button').dataset.v === S[g.dataset.set])));
-    const on = S.scroll !== 'off' && !reduce;
-    $('motion').classList.toggle('on', on); $('motion-led').classList.toggle('on', on);
-    $('motion').querySelector('.b').textContent = on ? 'scroll' : 'still';
-    $('motion').setAttribute('aria-pressed', on);
   }
   apply();
   $('sheet').addEventListener('click', e => {
@@ -520,21 +493,24 @@
     put(g.dataset.set === 'theme' ? 'hammi-theme' : 'hammi-accent', b.dataset.v === 'auto' ? null : b.dataset.v);
     apply(); drawWallBase();
   });
-  $('motion').addEventListener('click', () => { S.scroll = S.scroll === 'off' ? 'on' : 'off'; put('hammi-ticker', S.scroll); apply(); });
   const toggleSheet = open => { $('sheet').hidden = !open; $('settings').classList.toggle('on', open); $('set-led').classList.toggle('on', open); $('settings').setAttribute('aria-expanded', open); };
   $('settings').addEventListener('click', () => toggleSheet($('sheet').hidden));
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) toggleSheet(false); });
   document.addEventListener('click', e => { if (!$('sheet').hidden && !e.target.closest('#sheet, #settings')) toggleSheet(false); });
+  const accent = () => getComputedStyle(root).getPropertyValue('--orange').trim() || '#ff5a1f';
 
-  /* ---------- nav lights follow the section you are reading ---------- */
-  const navItems = [...document.querySelectorAll('#nav a[href^="#"]')];
-  const setNav = a => navItems.forEach(x => { const on = x === a; x.className = 'k ' + (on ? 'orange' : x.getAttribute('href') === '#news' ? 'grey' : 'black'); x.previousElementSibling.classList.toggle('on', on); });
-  navItems.forEach(a => a.addEventListener('click', () => setNav(a)));
-  if ('IntersectionObserver' in window) {
-    const targets = navItems.map(a => [a, a.getAttribute('href') === '#top' ? document.querySelector('.hero') : document.querySelector(a.getAttribute('href'))]);
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { const t = targets.find(x => x[1] === e.target); if (t) setNav(t[0]); } }), { rootMargin: '-40% 0px -55% 0px' });
-    targets.forEach(t => t[1] && io.observe(t[1]));
+  /* ---------- LED wall: text scrolling in dots ---------- */
+  const lc = document.createElement('canvas'); lc.width = 128; lc.height = 32; $('led').appendChild(lc);
+  const lx = lc.getContext('2d'), TEXT = 'HI FROM HAMMI.CA', src = document.createElement('canvas'); src.width = 128; src.height = 32;
+  const sx = src.getContext('2d'); let off = 40;
+  function led() {
+    sx.fillStyle = '#000'; sx.fillRect(0, 0, 128, 32); sx.fillStyle = '#fff'; sx.font = 'bold 24px "IBM Plex Mono", monospace'; sx.fillText(TEXT, off, 25);
+    const d = sx.getImageData(0, 0, 128, 32).data, c = accent();
+    lx.fillStyle = '#0b0b0c'; lx.fillRect(0, 0, 128, 32);
+    for (let y = 0; y < 32; y += 2) for (let x = 0; x < 128; x += 2) { lx.fillStyle = d[(y * 128 + x) * 4] > 80 ? c : '#1b1b1c'; lx.fillRect(x, y, 1.4, 1.4); }
+    off -= 2; if (off < -sx.measureText(TEXT).width) off = 128;
   }
+  led(); if (!reduce) setInterval(() => { if (!document.hidden) led(); }, 60);
 
   /* ---------- tiny Pixel Wall that paints itself ---------- */
   const wx = $('wall').getContext('2d');
@@ -543,7 +519,7 @@
   function drawWallBase() {
     wx.fillStyle = '#0b0b0c'; wx.fillRect(0, 0, 48, 32);
     for (let i = 0; i < 110; i++) { wx.fillStyle = PAL[i % PAL.length]; wx.fillRect(Math.random() * 48 | 0, Math.random() * 32 | 0, 1, 1); }
-    const c = getComputedStyle(root).getPropertyValue('--orange').trim() || '#ff5a1f';
+    const c = accent();
     HEART.forEach((row, y) => [...row].forEach((v, x) => { if (v === '1') { wx.fillStyle = c; wx.fillRect(20 + x, 13 + y, 1, 1); } }));
   }
   drawWallBase();
