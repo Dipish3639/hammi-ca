@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.1.1' };
+const CLIENT = { name: 'Hammi Chat', version: '0.2.0' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -17,7 +17,7 @@ const store = {
   get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
-const COLORS = ['#ff2e88', '#2ee6ff', '#9b5cff', '#ffa8d6', '#ff5fb0', '#7fd8ff', '#c9a2ff'];
+const COLORS = ['#ff4f97', '#57d6e8', '#a184ff', '#f7a6cf', '#ff7ab0', '#8fdcf0', '#c3adff'];
 const nameColor = n => COLORS[[...String(n || '?').toLowerCase()].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % COLORS.length];
 const hostOf = o => { try { return new URL(o).host; } catch { return String(o); } };
 const normOrigin = u => {
@@ -675,12 +675,13 @@ function renderRight() {
     if (!mem) out.push('<div class="empty">loading members...</div>');
     else {
       const name = m => m.nick || m.display_name || m.username;
-      const mark = m => (m.owner || m.is_owner ? '~' : m.admin || m.is_admin ? '&amp;' : m.moderator || m.is_mod ? '@' : m.bot ? '+' : '&nbsp;');
+      const role = m => (m.owner || m.is_owner ? 'owner' : m.admin || m.is_admin ? 'admin' : m.moderator || m.is_mod ? 'mod' : m.bot ? 'bot' : '');
+      const tagOf = m => role(m) ? ` <small>${role(m)}</small>` : '';
       const hasPresence = mem.some(m => 'online' in m || m.presence || m.status);
       const on = hasPresence ? mem.filter(isOnline) : mem, off = hasPresence ? mem.filter(m => !isOnline(m)) : [];
       out.push(`<div class="h">${hasPresence ? 'ONLINE' : 'MEMBERS'} · ${on.length}</div>`);
-      for (const m of on.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}" style="color:${nameColor(m.username)}" title="Message ${esc(m.username)}">${mark(m)}${esc(name(m))}${m.bot ? ' <small>bot</small>' : ''}</button>`);
-      if (off.length) { out.push(`<div class="h">OFFLINE · ${off.length}</div>`); for (const m of off.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}">${mark(m)}${esc(name(m))}</button>`); }
+      for (const m of on.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}" style="color:${nameColor(m.username)}" title="Message ${esc(m.username)}">${esc(name(m))}${tagOf(m)}</button>`);
+      if (off.length) { out.push(`<div class="h">OFFLINE · ${off.length}</div>`); for (const m of off.slice(0, 300)) out.push(`<button class="ln" data-act="dm" data-u="${esc(m.username)}">${esc(name(m))}${tagOf(m)}</button>`); }
     }
   } else if (v.kind === 'dm') {
     out.push(`<div class="h">TALKING TO</div><div class="ln" style="color:${nameColor(v.user)}">${esc(v.user)}</div>`);
@@ -738,19 +739,19 @@ function renderLog(stick) {
   const meIds = [c?.user?.id, S.me].filter(Boolean);
   const out = [];
   if (S.view.kind === 'home') {
-    out.push(line('sys', `*** Welcome to Hammi Chat${S.me ? ', ' + esc(S.me) : ''}. Pick a channel on the left, or press Ctrl+K.`));
-    out.push(line('sys', '*** /help lists the commands. /add &lt;address&gt; adds an Ember server, /join &lt;invite&gt; joins one.'));
+    out.push(line('sys', `Welcome to Hammi Chat${S.me ? ', ' + esc(S.me) : ''}. Pick a channel on the left, or press Ctrl+K.`));
+    out.push(line('sys', '/help lists the commands. /add &lt;address&gt; adds an Ember server, /join &lt;invite&gt; joins one.'));
   } else if (b?.hasMore) out.push(`<button class="more" data-act="older">load older messages</button>`);
-  else if (b?.loaded) out.push(line('sys', S.view.kind === 'dm' ? `*** start of your messages with ${esc(S.view.user)}` : `*** start of #${esc(chanName(S.view.origin, S.view.cid))}`));
-  if (b?.loading && !b.list.length) out.push(line('sys', '*** loading...'));
+  else if (b?.loaded) out.push(line('sys', S.view.kind === 'dm' ? `Start of your messages with ${esc(S.view.user)}` : `Start of #${esc(chanName(S.view.origin, S.view.cid))}`));
+  if (b?.loading && !b.list.length) out.push(line('sys', 'Loading…'));
   const all = [...(b?.list || []), ...sysLines.filter(x => x.view === vk)].sort((x, y) => (x.pending || x.failed ? 1 : 0) - (y.pending || y.failed ? 1 : 0) || toMs(x.created_at) - toMs(y.created_at));
   let lastDay = null;
   for (const m of all) {
     const day = dayOf(m.created_at);
-    if (lastDay && day !== lastDay) out.push(`<div class="day">─── ${esc(new Date(toMs(m.created_at)).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }))} ───</div>`);
+    if (lastDay && day !== lastDay) out.push(`<div class="day">${esc(new Date(toMs(m.created_at)).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }))}</div>`);
     lastDay = day;
-    if (m.sysText) { out.push(line(m.cls, '*** ' + esc(m.sysText), m.created_at)); continue; }
-    if (m.system) { out.push(line('sys', '*** ' + esc(m.body || ''), m.created_at)); continue; }
+    if (m.sysText) { out.push(line(m.cls, esc(m.sysText), m.created_at)); continue; }
+    if (m.system) { out.push(line('sys', esc(m.body || ''), m.created_at)); continue; }
     const who = m.alias?.name || m.author?.nick || m.author?.display_name || m.author?.username || 'unknown';
     const mine = (m.author && (meIds.includes(m.author.id) || myNames.includes(String(m.author.username || '').toLowerCase())));
     const mention = !mine && m.body && myNames.some(n => String(m.body).toLowerCase().includes('@' + n));
@@ -781,9 +782,9 @@ function renderLog(stick) {
       if (!url || !/^https?:\/\//i.test(url)) continue;
       let name = a.name || a.filename; if (!name) { name = url.split('/').pop().split('?')[0] || 'file'; try { name = decodeURIComponent(name); } catch { /* keep */ } }
       name = fixName(name);
-      tx += isImage(a) ? `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(name)}" loading="lazy">${esc(name)} ${size(a.size)}</a>` : `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer">[file] ${esc(name)} ${size(a.size)}</a>`;
+      tx += isImage(a) ? `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(name)}" loading="lazy">${esc(name)} ${size(a.size)}</a>` : `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)} · ${size(a.size)}</a>`;
     }
-    if (m.reactions?.length) tx += ' <span class="rx">' + m.reactions.map(r => `${r.me ? '<b>' : ''}${esc(r.emoji?.name || r.emoji)}${r.count ?? (r.users || []).length}${r.me ? '</b>' : ''}`).join(' ') + '</span>';
+    if (m.reactions?.length) tx += ' <span class="rx">' + m.reactions.map(r => `${r.me ? '<b>' : ''}${esc(r.emoji?.name || r.emoji)} ${r.count ?? (r.users || []).length}${r.me ? '</b>' : ''}`).join('  ') + '</span>';
     if (m.ephemeral) tx += ' <span class="ed">(only you can see this)</span>';
     if (m.failed) tx += ` <span class="ed">[not sent: ${esc(m.failed)}]</span>`;
     const tag = m.author?.bot ? '<span class="tag">BOT</span>' : m.author?.webhook ? '<span class="tag">HOOK</span>' : '';
@@ -798,11 +799,11 @@ const line = (cls, html, t = Date.now()) => `<div class="l ${cls}"><span class="
 function renderTyping() {
   const t = S.typing[vkeyOf(S.view)] || {}, now = Date.now();
   const names = Object.entries(t).filter(([, u]) => u > now).map(([n]) => n).filter(n => n !== S.me);
-  $('typing').textContent = !names.length ? '' : names.length > 3 ? '... several people are typing' : `... ${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} typing`;
+  $('typing').textContent = !names.length ? '' : names.length > 3 ? 'Several people are typing…' : `${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} typing…`;
 }
 function setPromptLabel() {
   const v = S.view;
-  const l = S.editing ? '[edit]' : v.kind === 'channel' ? `[#${chanName(v.origin, v.cid)}]` : v.kind === 'dm' ? `[@${v.user}]` : '[hammi]';
+  const l = S.editing ? 'editing' : v.kind === 'channel' ? `#${chanName(v.origin, v.cid)}` : v.kind === 'dm' ? `@${v.user}` : 'hammi';
   $('prompt-label').textContent = l;
 }
 function setReply(r) {
