@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.1' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.2' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
