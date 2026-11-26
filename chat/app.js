@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.2' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.3' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -745,6 +745,19 @@ function fmt(body, myNames, ctx) {
     .replace(/(^|[\s(])@([A-Za-z0-9_.-]{2,32})/g, (all, pre, n) => `${pre}<span class="${myNames.includes(n.toLowerCase()) ? 'mention-tx' : 're'}">@${n}</span>`)).join('');
   return s;
 }
+// https links to images and GIFs (any .gif/.png/.jpg/.webp, plus Klipy/Tenor/Giphy media links), at most 3 per message
+const PIC_HOSTS = /^(static\.klipy\.com|media\d*\.tenor\.com|c\.tenor\.com|media\d*\.giphy\.com|i\.giphy\.com)$/i;
+function inlinePics(body) {
+  const out = [];
+  for (const raw of body.match(/https:\/\/[^\s<>"']+/g) || []) {
+    const u = raw.replace(/[.,:;!?)\]]+$/, '');
+    let x; try { x = new URL(u); } catch { continue; }
+    if (x.protocol !== 'https:') continue;
+    if (/\.(gif|png|jpe?g|webp|avif)$/i.test(x.pathname) || (PIC_HOSTS.test(x.hostname) && !/\.(mp4|webm)$/i.test(x.pathname))) if (!out.includes(u)) out.push(u);
+    if (out.length === 3) break;
+  }
+  return out;
+}
 const isImage = a => /^image\//.test(a.type || a.content_type || a.mime || '') || /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(a.url || a.name || '');
 const size = n => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n > 1024 ? Math.round(n / 1024) + ' KB' : n ? n + ' B' : '');
 let sysLines = [];
@@ -781,7 +794,12 @@ function renderLog(stick) {
     const ctx = S.view.kind === 'channel' ? { origin: S.view.origin, sid: S.view.sid } : null;
     if (m.sealed === 'locked') tx += '<span class="rx">[locked: an encrypted DM. Type /unlock to read your DMs here]</span>';
     else if (m.sealed === 'failed') tx += '<span class="rx">[encrypted for a key this device doesn\'t have]</span>';
-    else tx += fmt(m.body || '', myNames, ctx);
+    else {
+      const body = String(m.body || ''), pics = inlinePics(body);
+      // a message that is only a GIF/image link shows just the picture
+      if (!(pics.length === 1 && body.trim() === pics[0])) tx += fmt(body, myNames, ctx);
+      for (const u of pics) tx += `<a class="att pic" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>`;
+    }
     for (const link of m.encFiles || []) {
       const f = HC.parseFileLink(link); if (!f) continue;
       const img = /^image\//.test(f.mime || '');

@@ -156,6 +156,8 @@ button.row:hover { color: var(--print); background: var(--hover); }
 .l .rp { display: block; color: var(--g-dim); font-size: .9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .l .att { display: block; color: var(--g-mute); font: 400 11px var(--mono); text-decoration: none; margin-top: 4px; }
 .l .att:hover { color: var(--g-ink); }
+.l .att.pic { display: inline-block; margin-top: 4px; }
+.l .att.pic img { margin: 0; }
 .l .att img { display: block; max-width: min(360px, 100%); max-height: 240px; margin: 2px 0 4px; border-radius: 2px; }
 .l .rx { display: inline-flex; gap: 10px; font: 400 11px var(--mono); color: var(--g-mute); }
 .l .rx b { font-weight: 400; color: var(--orange); }
