@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.0' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.1' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -739,8 +739,10 @@ function fmt(body, myNames, ctx) {
   s = s.replace(/&lt;@&amp;(r[0-9a-f]{10})&gt;/g, (all, rid) => { const r = (S.detail[skey(ctx?.origin, ctx?.sid)]?.roles || []).find(x => x.rid === rid); return `<span class="re">@${esc(r?.name || 'role')}</span>`; });
   s = s.replace(/&lt;#(c[0-9a-f]{10})&gt;/g, (all, cid) => { const f = channelByCid(cid, ctx); return f ? `<button class="chlink" data-act="channel" data-o="${esc(f.origin)}" data-s="${esc(f.sid)}" data-c="${esc(cid)}">#${esc(f.ch.name)}</button>` : '<span class="re">#unknown</span>'; });
   s = s.replace(/&lt;t:(-?\d{1,13})(?::([tTdDfFR]))?&gt;/g, (all, t, st) => { const x = stamp(t, st || 'f'); return x ? `<span class="code" title="${esc(new Date(t * 1000).toLocaleString())}">${esc(x)}</span>` : all; });
-  s = s.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,:;!?)\]'"]/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
-  s = s.replace(/(^|[\s(])@([A-Za-z0-9_.-]{2,32})/g, (all, pre, n) => `${pre}<span class="${myNames.includes(n.toLowerCase()) ? 'mention-tx' : 're'}">@${n}</span>`);
+  // links and @names only in the text between tags, never inside the emoji/mention markup made above
+  s = s.split(/(<[^>]*>)/).map(part => part[0] === '<' ? part : part
+    .replace(/\bhttps?:\/\/[^\s<]+[^\s<.,:;!?)\]'"]/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`)
+    .replace(/(^|[\s(])@([A-Za-z0-9_.-]{2,32})/g, (all, pre, n) => `${pre}<span class="${myNames.includes(n.toLowerCase()) ? 'mention-tx' : 're'}">@${n}</span>`)).join('');
   return s;
 }
 const isImage = a => /^image\//.test(a.type || a.content_type || a.mime || '') || /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(a.url || a.name || '');
