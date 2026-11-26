@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.3' };
+const CLIENT = { name: 'Hammi Chat', version: '0.3.4' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -805,9 +805,9 @@ function renderLog(stick) {
       const img = /^image\//.test(f.mime || '');
       tx += `<button class="att efile" data-act="efile" data-link="${esc(link)}" data-img="${img ? 1 : ''}">[${img ? 'image' : 'file'}, encrypted] ${esc(fixName(f.name))}</button>`;
     }
-    if (m.dmSig === 'valid') tx += ' <span class="sig ok" title="Encrypted, and signed by their key">e2ee ✓</span>';
-    else if (m.dmSig === 'invalid') tx += ' <span class="sig bad" title="The signature on this encrypted message does not match the sender\'s key">[signature mismatch]</span>';
-    else if (m.sealed === 'open') tx += ' <span class="sig" title="Encrypted">e2ee</span>';
+    // encrypted DMs are the normal case (the header says e2ee), so only the exceptions get a label
+    if (m.dmSig === 'invalid') tx += ' <span class="sig bad" title="The signature on this encrypted message does not match the sender\'s key">[signature mismatch]</span>';
+    else if (S.view.kind === 'dm' && !S.demo && !m.sealed && m.body && !m.sysText) tx += ' <span class="sig" title="This message was sent without encryption">not encrypted</span>';
     if (m.signature && S.view.kind === 'channel') {
       const sk = `${S.view.origin}|${m.id}|${m.signature.sig}`, vd = S.sigs[sk];
       if (vd === 'ok') tx += ' <span class="sig ok" title="Signed: it really came from this Nookara account">signed</span>';
