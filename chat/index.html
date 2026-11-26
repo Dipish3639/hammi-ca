@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=0.3.5">
+<link rel="stylesheet" href="app.css?v=0.4.0">
 <script>try{var t=JSON.parse(localStorage.getItem("hammichat_settings")||"{}").theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
@@ -51,6 +51,10 @@
     <div class="sp0"></div>
     <div class="sp keyhints" id="keys"><span><b>ctrl k</b> jump</span><span><b>alt ↑↓</b> channels</span><span><b>↑</b> edit last</span><span><b>/help</b> commands</span></div>
     <form class="prompt" id="prompt" autocomplete="off">
+      <div class="tray" id="tray" hidden></div>
+      <button type="button" class="k black tool" id="btn-attach" title="Attach files or images" aria-label="Attach files">file</button>
+      <button type="button" class="k black tool" id="btn-gif" title="Find a GIF" aria-label="Find a GIF">gif</button>
+      <input type="file" id="file-input" multiple hidden>
       <label class="slot" for="input"><span class="lb" id="prompt-label">hammi</span><textarea id="input" rows="1" spellcheck="true" placeholder="message · /help for commands"></textarea></label>
       <button type="submit" class="k orange send" aria-label="Send">send</button>
     </form>
@@ -71,6 +75,23 @@
   <div class="set"><span>Desktop notifications<small>mentions and DMs</small></span><div class="sk"><span class="led"></span><button class="k black" data-tog="notify">ntf</button></div></div>
 </div>
 
+<div class="overlay" id="ask" hidden>
+  <form class="box askbox" id="ask-form" autocomplete="off">
+    <h4 class="boxh"><span id="ask-title"></span><b id="ask-tag"></b></h4>
+    <p class="ask-text" id="ask-text"></p>
+    <input id="ask-input" spellcheck="false">
+    <p class="ask-err" id="ask-err"></p>
+    <div class="ask-actions"><button type="button" class="k grey" id="ask-cancel">cancel</button><button type="submit" class="k orange" id="ask-ok">ok</button></div>
+  </form>
+</div>
+<div class="overlay" id="gifs" hidden>
+  <div class="box gifbox">
+    <h4 class="boxh"><span>gifs</span><b>powered by klipy</b></h4>
+    <input id="gif-input" placeholder="search gifs" autocomplete="off">
+    <div id="gif-grid"></div>
+    <div class="gifnote" id="gif-note"></div>
+  </div>
+</div>
 <div class="overlay" id="jump" hidden>
   <div class="box">
     <h4 class="boxh"><span>jump to</span><b>ctrl k</b></h4>
@@ -96,7 +117,7 @@
   <div class="box keysbox" id="keys-body"></div>
 </div>
 
-<script src="e2ee.js?v=0.3.5"></script>
-<script src="app.js?v=0.3.5"></script>
+<script src="e2ee.js?v=0.4.0"></script>
+<script src="app.js?v=0.4.0"></script>
 </body>
 </html>

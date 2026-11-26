@@ -291,6 +291,15 @@ async function dmSignature(m) {
   if (r !== 'valid') r = await check(await bundleFor(sender, true).catch(() => null)); // they may have linked something since
   return r;
 }
+// a file -> its encrypted copy to upload, plus the key that travels inside the encrypted message (same format as the reference client)
+async function sealFile(file) {
+  const k = rnd(32), iv = rnd(12);
+  const key = await subtle.importKey('raw', k, 'AES-GCM', false, ['encrypt']);
+  const data = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: te.encode('nke1 file') }, key, await file.arrayBuffer()));
+  return { upload: new File([data], 'file.bin', { type: 'application/octet-stream' }), key: b64(k), iv: b64(iv) };
+}
+const encPart = s => encodeURIComponent(s).replace(/[!'()*.]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+const fileLink = (url, { key, iv, name, mime }) => `${url.split('#')[0]}#nke=${key}.${iv}.${encPart(name || 'file')}.${encPart(mime || 'application/octet-stream')}`;
 // an encrypted file link -> object URL of the opened file
 const fileCache = new Map();
 function parseFileLink(link) {
@@ -400,7 +409,7 @@ window.HammiCrypto = {
   use: fn => { nk = fn; },
   onChange: fn => { subs.add(fn); return () => subs.delete(fn); },
   status, init, forget, setup, unlockPasscode, unlockRecovery, startLink, passcodeType: () => info?.passcode?.type || null, hasRecovery: () => !!info?.recovery,
-  bundleFor, forgetBundle, sealDm, sealEdit, openDm, openFile, parseFileLink, myId: () => me?.id,
+  bundleFor, forgetBundle, sealDm, sealEdit, openDm, openFile, parseFileLink, sealFile, fileLink, myId: () => me?.id,
   setupSigning, signMessage, canSign: () => !!signer, signState: () => signState, checkMessage, noteClock,
   _test: { setKeys: (k, m) => { keys = k; me = m; }, canonical, payloadOf, signedBytes, encryptFor, seal, unseal, commitOf, linkCodeOf, stretchRecovery, lockBlob, openBlob, b64, unb64, kidOf },
 };

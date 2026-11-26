@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.3.5' };
+const CLIENT = { name: 'Hammi Chat', version: '0.4.0' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -61,7 +61,7 @@ const vkeyOf = v => v.kind === 'channel' ? `c|${v.origin}|${v.cid}` : v.kind ===
 // ───────────────────────── Nookara REST ─────────────────────────
 async function nk(path, opts = {}) {
   if (S.demo) throw Object.assign(new Error('demo'), { status: 0 });
-  const headers = { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(S.token ? { Authorization: `Bearer ${S.token}` } : {}), ...(opts.headers || {}) };
+  const headers = { ...(typeof opts.body === 'string' ? { 'Content-Type': 'application/json' } : {}), ...(S.token ? { Authorization: `Bearer ${S.token}` } : {}), ...(opts.headers || {}) };
   let res;
   try { res = await fetch(NOOKARA + path, { ...opts, headers }); } catch { throw Object.assign(new Error('nookara_unreachable'), { status: 0 }); }
   HC?.noteClock(res.headers.get('date'));
@@ -166,7 +166,7 @@ async function api(c, path, opts = {}, retry = true) {
   if (!c.session) throw Object.assign(new Error('not_connected'), { status: 401 });
   let res;
   try {
-    res = await fetch(c.origin + '/api/v1' + path, { ...opts, headers: { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${c.session}`, ...(opts.headers || {}) } });
+    res = await fetch(c.origin + '/api/v1' + path, { ...opts, headers: { ...(typeof opts.body === 'string' ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${c.session}`, ...(opts.headers || {}) } });
   } catch { throw Object.assign(new Error('server_unreachable'), { status: 0 }); }
   if (res.status === 401 && retry && await newSession(c).then(() => true, () => false)) return api(c, path, opts, false);
   const data = await res.json().catch(() => ({}));
@@ -449,26 +449,30 @@ async function loadMessages(v, older = false) {
   if (vk === vkeyOf(S.view)) renderLog(!older);
 }
 
-async function send(text) {
+// atts: uploaded files / picked GIFs, [{ url, type, name, size, width, height, sha256, enc }]
+async function send(text, atts = []) {
   const v = S.view;
   const vk = vkeyOf(v);
-  if (S.editing) return saveEdit(text);
+  if (S.editing && !atts.length) return saveEdit(text);
   const id = 'pending-' + nonce(), n = nonce();
   const reply = S.replyTo;
-  const local = { id, nonce: n, pending: true, body: text, created_at: Date.now(), author: { username: v.kind === 'channel' ? (S.insts.get(v.origin)?.user?.username || S.me) : S.me }, reply: reply ? { author: { username: reply.who }, body: reply.text } : null };
+  const chAtts = atts.map(({ enc, ...a }) => a);
+  const dmLines = atts.map(a => a.url);
+  const local = { id, nonce: n, pending: true, body: v.kind === 'dm' ? [text, ...atts.filter(a => !a.enc).map(a => a.url)].filter(Boolean).join('\n') : text, encFiles: atts.filter(a => a.enc).map(a => a.url), attachments: v.kind === 'channel' ? atts.map(a => ({ ...a, url: a.preview || a.url })) : [], created_at: Date.now(), author: { username: v.kind === 'channel' ? (S.insts.get(v.origin)?.user?.username || S.me) : S.me }, reply: reply ? { author: { username: reply.who }, body: reply.text } : null };
   setReply(null);
   const b = bucket(vk); b.list = sortList([...b.list, local]); renderLog(true);
   if (S.demo) { setTimeout(() => updateMessage(vk, id, x => ({ ...x, id: 'demo' + n, pending: false })), 250); return; }
   if (v.kind === 'channel') {
     const c = S.insts.get(v.origin);
     const body = text.replace(/\r\n/g, '\n');
-    const signature = await signFor(c, v, body, { reply_to: reply ? reply.id : null });
-    const frame = sig => ({ type: 'chat_send', nonce: n, channel: v.cid, message: body, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) });
+    const signature = await signFor(c, v, body, { reply_to: reply ? reply.id : null, attachments: chAtts });
+    const withAtts = chAtts.length ? { attachments: chAtts } : {};
+    const frame = sig => ({ type: 'chat_send', nonce: n, channel: v.cid, message: body, ...withAtts, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) });
     // the server turned the signature down: once more without it (and say so)
     const resend = signature ? () => { sys('This server did not accept the signature, so the message was sent unsigned.', 'err'); c.acks.set(n, { vkey: vk, id }); sendInst(c, frame(null)); } : null;
     c.acks.set(n, { vkey: vk, id, resend });
     if (!sendInst(c, frame(signature))) {
-      const post = sig => api(c, `/channels/${encodeURIComponent(v.cid)}/messages`, { method: 'POST', body: JSON.stringify({ message: body, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) }) });
+      const post = sig => api(c, `/channels/${encodeURIComponent(v.cid)}/messages`, { method: 'POST', body: JSON.stringify({ message: body, ...withAtts, ...(reply ? { reply_to: reply.id } : {}), ...(sig ? { signature: sig } : {}) }) });
       try { const r = await post(signature).catch(e => (signature && SIGN_REFUSED.has(e.message) ? post(null) : Promise.reject(e))); settle(c, n, r.message || r); }
       catch (e) { c.acks.delete(n); updateMessage(vk, id, x => ({ ...x, pending: false, failed: e.message })); }
     }
@@ -478,9 +482,10 @@ async function send(text) {
     let frame;
     try {
       const quote = reply ? { from: reply.who, s: String(reply.text || '').slice(0, 200) } : null;
-      frame = { type: 'im_send', to: v.user, enc: await HC.sealDm(v.user, text, quote), nonce: n, ...replyTo };
+      const wire = [text, ...dmLines].filter(Boolean).join('\n');
+      frame = { type: 'im_send', to: v.user, enc: await HC.sealDm(v.user, wire, quote), nonce: n, ...replyTo };
     } catch (e) {
-      if (e.message === 'no_keys') { frame = { type: 'im_send', to: v.user, message: text, nonce: n, ...replyTo }; sys(`${v.user} hasn't set up encrypted DMs, so this one went unencrypted.`); }
+      if (e.message === 'no_keys' && !atts.some(a => a.enc)) { frame = { type: 'im_send', to: v.user, message: [text, ...dmLines].filter(Boolean).join('\n'), nonce: n, ...replyTo }; sys(`${v.user} hasn't set up encrypted DMs, so this one went unencrypted.`); }
       else {
         dmAcks.delete(n);
         updateMessage(vk, id, x => ({ ...x, pending: false, failed: e.message === 'e2ee_locked' ? 'unlock encrypted DMs first: /unlock' : e.message }));
@@ -494,10 +499,13 @@ async function send(text) {
 }
 const SIGN_REFUSED = new Set(['bad_signature', 'signing_unavailable']);
 // a signature for a message to an Ember server, when this account can sign there (null otherwise: it goes unsigned)
-async function signFor(c, v, body, { reply_to = null, edit_of = null } = {}) {
+async function signFor(c, v, body, { reply_to = null, edit_of = null, attachments = [] } = {}) {
   if (!SET.sign) return null;
   if (!HC?.canSign() || c.info?.accounts_mode !== 'velora' || !c.user?.velora_id) return null;
-  try { return await HC.signMessage({ instance: c.origin, community: v.sid, channel: v.cid, author: c.user.velora_id, body, attachments: [], reply_to, edit_of }, c.info); }
+  // each file is signed by its sha256, a Klipy GIF by its address; anything else can't be signed
+  const refs = attachments.map(a => (/^[0-9a-f]{64}$/.test(String(a.sha256 || '')) ? a.sha256 : /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//i.test(a.url || '') ? `url:${a.url.slice(0, 512)}` : null));
+  if (refs.includes(null)) return null;
+  try { return await HC.signMessage({ instance: c.origin, community: v.sid, channel: v.cid, author: c.user.velora_id, body, attachments: refs, reply_to, edit_of }, c.info); }
   catch { return null; }
 }
 async function saveEdit(text) {
@@ -524,7 +532,7 @@ async function saveEdit(text) {
 }
 async function deleteMsg(id) {
   const v = S.view;
-  if (!confirm('Delete this message?')) return;
+  if (!(await ask({ title: 'delete message', tag: 'del', text: 'Delete this message? This cannot be undone.', input: false, ok: 'delete' }))) return;
   try {
     if (S.demo) { /* nothing to tell */ }
     else if (v.kind === 'channel') await api(S.insts.get(v.origin), `/messages/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -817,7 +825,7 @@ function renderLog(stick) {
     if (m.edited_at) tx += ' <span class="ed">(edited)</span>';
     for (const a of m.attachments || []) {
       const url = typeof a === 'string' ? a : a.url;
-      if (!url || !/^https?:\/\//i.test(url)) continue;
+      if (!url || !(/^https?:\/\//i.test(url) || url.startsWith('blob:'))) continue;
       let name = a.name || a.filename; if (!name) { name = url.split('/').pop().split('?')[0] || 'file'; try { name = decodeURIComponent(name); } catch { /* keep */ } }
       name = fixName(name);
       tx += isImage(a) ? `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(name)}" loading="lazy">${esc(name)} ${size(a.size)}</a>` : `<a class="att" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)} · ${size(a.size)}</a>`;
@@ -1049,15 +1057,152 @@ input.addEventListener('keydown', e => {
     if (m && !m.pending) { e.preventDefault(); S.editing = { id: m.id, vkey: vk }; input.value = m.body || ''; setPromptLabel(); autosize(); }
   }
 });
+// ───────────────────────── in-app windows (instead of the browser's prompt / confirm) ─────────────────────────
+// ask({ title, tag, text, hint, value, placeholder, ok, cancel, input: false = a yes/no question, check(v) -> error text or '' })
+// resolves with the typed text (or true for a question), or null when cancelled
+let askDone = null;
+function ask(o) {
+  if (askDone) askDone(null);
+  const inp = $('ask-input'), withInput = o.input !== false;
+  $('ask-title').textContent = o.title || '';
+  $('ask-tag').textContent = o.tag || '';
+  $('ask-text').innerHTML = esc(o.text || '') + (o.hint ? `<small>${esc(o.hint)}</small>` : '');
+  $('ask-err').textContent = '';
+  $('ask-ok').textContent = o.ok || 'ok';
+  $('ask-cancel').textContent = o.cancel || 'cancel';
+  inp.hidden = !withInput; inp.value = o.value || ''; inp.placeholder = o.placeholder || '';
+  $('ask').hidden = false;
+  setTimeout(() => (withInput ? (inp.focus(), inp.select()) : $('ask-ok').focus()), 0);
+  return new Promise(res => {
+    askDone = v => { askDone = null; $('ask').hidden = true; res(v); };
+    $('ask-form').onsubmit = e => {
+      e.preventDefault();
+      if (!withInput) return askDone(true);
+      const v = inp.value.trim();
+      const err = !v ? 'type something first' : o.check ? o.check(v) : '';
+      if (err) { $('ask-err').textContent = err; inp.focus(); return; }
+      askDone(v);
+    };
+  });
+}
+$('ask-cancel').addEventListener('click', () => askDone?.(null));
+$('ask').addEventListener('click', e => { if (e.target.id === 'ask') askDone?.(null); });
+$('ask').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); askDone?.(null); } });
+
+// ───────────────────────── files and GIFs ─────────────────────────
+let staged = []; // [{ file, preview }]
+const MAX_FILES = 10, MAX_MB = 100;
+function stage(files) {
+  if (S.view.kind === 'home') { sys('pick a channel or DM first, then attach files', 'err'); return; }
+  for (const file of [...files]) {
+    if (staged.length >= MAX_FILES) { sys(`at most ${MAX_FILES} files in one message`, 'err'); break; }
+    if (file.size > MAX_MB * 1048576) { sys(`${file.name} is too big (the limit is ${MAX_MB} MB)`, 'err'); continue; }
+    staged.push({ file, preview: /^image\//.test(file.type) ? URL.createObjectURL(file) : null });
+  }
+  renderTray(); input.focus();
+}
+function unstage(i) { const [x] = staged.splice(i, 1); if (x?.preview) URL.revokeObjectURL(x.preview); renderTray(); }
+function renderTray() {
+  const t = $('tray');
+  t.hidden = !staged.length;
+  t.innerHTML = staged.map((x, i) => `<div class="chip">${x.preview ? `<img src="${esc(x.preview)}" alt="">` : `<span class="ic">${esc((x.file.name.split('.').pop() || 'file').slice(0, 4))}</span>`}<span>${esc(x.file.name)}</span><small>${size(x.file.size)}</small><button type="button" data-unstage="${i}" title="Remove" aria-label="Remove ${esc(x.file.name)}">×</button></div>`).join('');
+}
+const fileKind = f => (/^image\/gif$/.test(f.type) ? 'gif' : /^image\//.test(f.type) ? 'image' : /^video\//.test(f.type) ? 'video' : /^audio\//.test(f.type) ? 'audio' : 'file');
+// one file -> where it lives now: the Ember server for a channel, Nookara's temporary storage for a DM (encrypted first when they have keys)
+async function uploadOne(v, file) {
+  const fd = new FormData();
+  if (v.kind === 'channel') {
+    fd.append('file', file);
+    const d = await api(S.insts.get(v.origin), `/media/upload?sid=${encodeURIComponent(v.sid)}&cid=${encodeURIComponent(v.cid)}`, { method: 'POST', body: fd });
+    return { url: d.url, type: d.type || fileKind(file), name: d.name || file.name, size: d.size ?? file.size, width: d.width, height: d.height, sha256: d.sha256 };
+  }
+  const theirs = await HC.bundleFor(v.user).catch(() => ({ none: true }));
+  if (!theirs.none) {
+    const { upload, key, iv } = await HC.sealFile(file);
+    fd.append('file', upload);
+    const d = await nk('/chat/media/temp', { method: 'POST', body: fd });
+    return { url: HC.fileLink(d.attachment.url, { key, iv, name: file.name, mime: file.type }), enc: true, type: fileKind(file), name: file.name, size: file.size };
+  }
+  fd.append('file', file);
+  const d = await nk('/chat/media/temp', { method: 'POST', body: fd });
+  return { ...d.attachment, name: d.attachment.name || file.name };
+}
+const UPLOAD_ERR = { file_too_large: 'that file is too big for this server', storage_limit_exceeded: "that doesn't fit in your Nookara storage", insufficient_scope: 'Hammi Chat is missing the upload permission (sign out and in again)' };
+async function sendFiles(text) {
+  const v = S.view, files = staged; staged = []; renderTray();
+  if (S.demo) { send(text, files.map(x => ({ url: x.preview || 'blob:', preview: x.preview, type: fileKind(x.file), name: x.file.name, size: x.file.size }))); return; }
+  sys(`uploading ${files.length === 1 ? files[0].file.name : files.length + ' files'}…`);
+  try {
+    const atts = [];
+    for (const x of files) atts.push(await uploadOne(v, x.file));
+    files.forEach(x => x.preview && URL.revokeObjectURL(x.preview));
+    if (vkeyOf(v) !== vkeyOf(S.view)) go(v);
+    send(text, atts);
+  } catch (e) {
+    sys('upload failed: ' + (UPLOAD_ERR[e.message] || e.message), 'err');
+    staged = files; renderTray(); if (text) { input.value = text; autosize(); }
+  }
+}
+$('btn-attach').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', e => { stage(e.target.files); e.target.value = ''; });
+$('tray').addEventListener('click', e => { const b = e.target.closest('[data-unstage]'); if (b) unstage(Number(b.dataset.unstage)); });
+input.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])]; if (f.length) { e.preventDefault(); stage(f); } });
+{
+  const disp = document.querySelector('.display'); let depth = 0;
+  const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+  disp.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; disp.classList.add('drop'); });
+  disp.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+  disp.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; disp.classList.remove('drop'); } });
+  disp.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); depth = 0; disp.classList.remove('drop'); stage(e.dataTransfer.files); });
+}
+// GIF search (Klipy, through Nookara)
+const gif = { q: null, page: 1, more: false, busy: false, timer: 0, list: [] };
+function openGifs() {
+  if (S.view.kind === 'home') { sys('pick a channel or DM first, then add a GIF', 'err'); return; }
+  $('gifs').hidden = false; $('gif-input').value = ''; $('gif-input').focus(); searchGifs('');
+}
+function closeGifs() { $('gifs').hidden = true; input.focus(); }
+async function searchGifs(q, next = false) {
+  if (gif.busy && next) return;
+  const page = next ? gif.page + 1 : 1;
+  gif.busy = true; gif.q = q;
+  const note = $('gif-note');
+  if (S.demo) { $('gif-grid').innerHTML = ''; note.textContent = 'GIF search needs a real sign-in.'; gif.busy = false; return; }
+  if (!next) note.textContent = 'loading…';
+  try {
+    const d = await nk(`/chat/gifs?q=${encodeURIComponent(q)}&page=${page}`);
+    if (gif.q !== q) return;
+    const fresh = (d.gifs || []).filter(g => /^https:\/\//.test(g.url || ''));
+    gif.list = next ? [...gif.list, ...fresh.filter(g => !gif.list.some(x => x.id === g.id))] : fresh;
+    gif.page = page; gif.more = !!d.has_more;
+    $('gif-grid').innerHTML = gif.list.map((g, i) => `<button type="button" data-gif="${i}" title="${esc(g.title || '')}"${g.width && g.height ? ` style="aspect-ratio:${Number(g.width)}/${Number(g.height)}"` : ''}><img src="${esc(/^https:\/\//.test(g.preview || '') ? g.preview : g.url)}" alt="${esc(g.title || 'GIF')}" loading="lazy" referrerpolicy="no-referrer"></button>`).join('');
+    note.textContent = gif.list.length ? '' : 'No GIFs found.';
+  } catch (e) {
+    note.textContent = e.message === 'gifs_not_configured' ? "GIF search isn't set up on Nookara yet." : e.message === 'insufficient_scope' ? 'Hammi Chat is missing the permission for GIF search.' : "Couldn't load GIFs right now.";
+  } finally { gif.busy = false; }
+}
+$('btn-gif').addEventListener('click', openGifs);
+$('gif-input').addEventListener('input', e => { clearTimeout(gif.timer); const q = e.target.value.trim(); gif.timer = setTimeout(() => searchGifs(q), 300); });
+$('gif-input').addEventListener('keydown', e => { if (e.key === 'Escape') closeGifs(); });
+$('gif-grid').addEventListener('scroll', e => { const el = e.currentTarget; if (gif.more && el.scrollHeight - el.scrollTop - el.clientHeight < 200) searchGifs(gif.q, true); });
+$('gif-grid').addEventListener('click', e => {
+  const b = e.target.closest('[data-gif]'); if (!b) return;
+  const g = gif.list[Number(b.dataset.gif)]; if (!g) return;
+  closeGifs();
+  send('', [{ url: g.url, type: 'gif', name: g.title || 'GIF', width: g.width, height: g.height }]);
+});
+$('gifs').addEventListener('click', e => { if (e.target.id === 'gifs') closeGifs(); });
+
 $('prompt').addEventListener('submit', e => {
   e.preventDefault();
   const text = input.value.replace(/\s+$/, '');
-  if (!text) return;
-  input.value = ''; autosize();
-  if (text.startsWith('/') && !text.startsWith('//')) { command(text); return; }
+  if (!text && !staged.length) return;
+  if (text.startsWith('/') && !text.startsWith('//') && !staged.length) { input.value = ''; autosize(); command(text); return; }
   if (S.view.kind === 'home') { sys('pick a channel or DM first (Ctrl+K)', 'err'); return; }
-  if (text.length > 4000) { sys('messages can be at most 4000 characters', 'err'); input.value = text; return; }
-  send(text.startsWith('//') ? text.slice(1) : text);
+  if (text.length > 4000) { sys('messages can be at most 4000 characters', 'err'); return; }
+  input.value = ''; autosize();
+  const body = text.startsWith('//') ? text.slice(1) : text;
+  if (staged.length) sendFiles(body); else send(body);
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
@@ -1071,8 +1216,8 @@ document.addEventListener('click', e => {
     if (ch) go({ kind: 'channel', origin: b.dataset.o, sid: b.dataset.s, cid: ch.cid });
   }
   else if (a === 'dm' && b.dataset.u && b.dataset.u !== S.me) go({ kind: 'dm', user: b.dataset.u });
-  else if (a === 'add') { const v = prompt('Ember server address (for example e-myserver.nookara.cc):'); const o = normOrigin(v); if (o) addServer(o); }
-  else if (a === 'newdm') { const v = prompt('Nookara username to message:'); if (v) go({ kind: 'dm', user: v.trim().replace(/^@/, '') }); }
+  else if (a === 'add') ask({ title: 'add server', tag: 'ember', text: 'Ember server address', hint: 'for example e-myserver.nookara.cc or chat.example.com', placeholder: 'server address', ok: 'add', check: v => (normOrigin(v) ? '' : "that doesn't look like a server address") }).then(v => { const o = v && normOrigin(v); if (o) addServer(o); });
+  else if (a === 'newdm') ask({ title: 'new message', tag: 'dm', text: 'Who do you want to message?', hint: 'their Nookara username', placeholder: 'username', ok: 'open', check: v => (/^@?[A-Za-z0-9_.-]{1,32}$/.test(v) ? '' : 'usernames are letters, numbers, dots, dashes and underscores') }).then(v => { if (v) go({ kind: 'dm', user: v.replace(/^@/, '') }); });
   else if (a === 'older') loadMessages(S.view, true);
   else if (a === 'noreply') setReply(null);
   else if (a === 'reply') { const m = findMsg(b.dataset.id); if (m) setReply({ id: m.id, who: m.author?.username || '?', text: m.body || '' }); }
@@ -1090,7 +1235,7 @@ document.addEventListener('click', e => {
   else if (a === 'e2ee-link') unlockWith('link');
   else if (a === 'e2ee-setup') unlockWith('setup');
   else if (a === 'e2ee-close') closeKeys();
-  else if (a === 'react') { const em = prompt('React with which emoji?', '👍'); if (em) react(b.dataset.id, em.trim()); }
+  else if (a === 'react') { const id = b.dataset.id; ask({ title: 'react', tag: 'emoji', text: 'React with which emoji?', value: '👍', ok: 'react' }).then(em => { if (em) react(id, em); }); }
 });
 // remember the last channel per server
 addEventListener('beforeunload', () => { const v = S.view; if (v.kind === 'channel') store.set('hammichat_lastch:' + skey(v.origin, v.sid), v.cid); });
@@ -1112,7 +1257,7 @@ function closeDrawers() { $('left').classList.remove('open'); $('right').classLi
 $('btn-left').addEventListener('click', () => { $('right').classList.remove('open'); $('left').classList.toggle('open'); });
 $('btn-right').addEventListener('click', () => { $('left').classList.remove('open'); $('right').classList.toggle('open'); });
 $('btn-dms').addEventListener('click', () => { if (S.demo) { sys('Encrypted DMs need a real sign-in.'); return; } openKeys(); });
-$('st-me').addEventListener('click', () => { if (!S.me) { showLogin(); return; } if (confirm(`Signed in as ${S.me}. Sign out?`)) signOut(); });
+$('st-me').addEventListener('click', () => { if (!S.me) { showLogin(); return; } ask({ title: 'account', tag: S.me, text: `Signed in as ${S.me}. Sign out?`, input: false, ok: 'sign out' }).then(y => { if (y) signOut(); }); });
 $('log').addEventListener('click', closeDrawers);
 $('signin').addEventListener('click', signIn);
 $('demo').addEventListener('click', () => { location.search = '?demo'; });
