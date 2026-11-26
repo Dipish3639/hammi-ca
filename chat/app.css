@@ -191,7 +191,8 @@ button.row:hover { color: var(--print); background: var(--hover); }
 .keyhints { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 400 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--print-dim); }
 .keyhints b { font-weight: 400; color: var(--print); }
 .prompt { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; min-width: 0; }
-.prompt .tool { width: 46px; height: 46px; font-size: 10px; flex: none; }
+.prompt .tool { width: 46px; height: 46px; font-size: 10px; flex: none; display: grid; place-items: center; padding: 0; }
+.prompt .tool svg { display: block; }
 .prompt .tool + .tool { margin-left: -6px; }
 .tray { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: flex; align-items: center; gap: 8px; max-width: 260px; padding: 4px 6px 4px 4px; border-radius: 3px; background: var(--glass); color: var(--g-ink); font: 400 11px var(--mono); }
