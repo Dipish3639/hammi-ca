@@ -2,616 +2,421 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>hammi.ca</title>
 <meta name="description" content="Small games for the PC, and a wall you can paint on in your browser.">
-<meta name="theme-color" content="#07060f">
+<meta name="theme-color" content="#dcdcd9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a1b" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/img/logo/hammi-icon.svg" type="image/svg+xml">
 <link rel="icon" href="/img/logo/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  /* set the saved light/dark mode before the page paints */
+  try { const t = localStorage.getItem('hammi-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <style>
   /* ------------------------------------------------------------------
-     hammi.ca in a dark 90s arcade style: CRT glass,
-     pixel type, chunky panels and neon glow.
+     hammi.ca, same look as Hammi Chat: a grey drawing surface with a
+     fine grid, thin printed labels, keys that press down, small LEDs
+     and black displays for pictures and news.
      ------------------------------------------------------------------ */
   :root {
-    --bg: #07060f;
-    --panel: #0f0d22;
-    --panel-2: #17143a;
-    --cyan: #2ee6ff;
-    --pink: #ff2e88;
-    /* theme: synthwave pink, purple and cyan */
-    --yellow: #ffa8d6;  /* light pink highlight */
-    --orange: #ff5fb0;
-    --red: #ff2e88;
-    --lime: #2ee6ff;
-    --violet: #9b5cff;
-    --text: #e7e4ff;
-    --muted: #8f8ab8;
-    --pixel: "Press Start 2P", ui-monospace, monospace;
-    --term: "VT323", ui-monospace, monospace;
+    --surface: #dcdcd9; --print: #3b3b3a; --print-dim: #7d7d7a; --rule: #b9b9b5;
+    --k-black-1: #2d2d2d; --k-black-2: #161616; --k-grey-1: #f1f0ed; --k-grey-2: #d0cfcb; --k-grey-ink: #2b2b2a;
+    --k-orange-1: #ff6326; --k-orange-2: #e5470f;
+    --led-off: #a3a39f; --led-on: #ff4a14;
+    --grid-a: rgba(0,0,0,.045); --grid-b: rgba(0,0,0,.08); --mark: rgba(0,0,0,.085);
+    --glass: #0b0b0c; --g-ink: #e9e9e6; --g-mute: #8d8d8a; --g-dim: #5a5a58; --g-line: #1e1e1f;
+    --orange: #ff5a1f; --orange-ink: #d8420c; --blue: #3c9eff;
+    --sans: Inter, "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -2px 1px rgba(0,0,0,.12), 0 1px 0 rgba(0,0,0,.25), 0 3px 3px -1px rgba(0,0,0,.2), 0 9px 14px -6px rgba(0,0,0,.3);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.35), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: light;
   }
-  * { box-sizing: border-box; }
-  html { background: var(--bg); overflow-x: hidden; scroll-behavior: smooth; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --surface: #1a1a1b; --print: #c9c9c5; --print-dim: #7d7d80; --rule: #343436;
+    --k-grey-1: #4a4a4c; --k-grey-2: #333335; --k-grey-ink: #e3e3df; --led-off: #3c3c3e;
+    --grid-a: rgba(255,255,255,.028); --grid-b: rgba(255,255,255,.055); --mark: rgba(255,255,255,.07);
+    --orange-ink: #ff6a33;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.7), 0 3px 3px -1px rgba(0,0,0,.4), 0 9px 14px -6px rgba(0,0,0,.6);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --surface: #1a1a1b; --print: #c9c9c5; --print-dim: #7d7d80; --rule: #343436;
+    --k-grey-1: #4a4a4c; --k-grey-2: #333335; --k-grey-ink: #e3e3df; --led-off: #3c3c3e;
+    --grid-a: rgba(255,255,255,.028); --grid-b: rgba(255,255,255,.055); --mark: rgba(255,255,255,.07);
+    --orange-ink: #ff6a33;
+    --gshadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.7), 0 3px 3px -1px rgba(0,0,0,.4), 0 9px 14px -6px rgba(0,0,0,.6);
+    --disp-shadow: 0 0 0 1px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06), inset 0 2px 6px rgba(0,0,0,.8);
+    color-scheme: dark; }
+  :root.accent-blue { --orange: #3c9eff; --orange-ink: #1f7fe0; --k-orange-1: #4aa6ff; --k-orange-2: #1f7fe0; --led-on: #3c9eff; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { overflow-x: hidden; scroll-behavior: smooth; background: var(--surface); }
   body {
-    margin: 0;
-    min-height: 100vh;
-    color: var(--text);
-    font: 21px/1.25 var(--term);
-    background: var(--bg);
-    overflow-x: hidden;
+    margin: 0; min-height: 100vh; overflow-x: hidden;
+    color: var(--print); font: 300 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased;
+    background-color: var(--surface);
+    background-image: linear-gradient(var(--grid-b) 1px, transparent 1px), linear-gradient(90deg, var(--grid-b) 1px, transparent 1px), linear-gradient(var(--grid-a) 1px, transparent 1px), linear-gradient(90deg, var(--grid-a) 1px, transparent 1px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px, auto;
+    background-position: -1px -1px;
   }
-  a { color: var(--cyan); }
-  a:hover { color: var(--yellow); }
-  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+  a { color: var(--print); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  a:hover { color: var(--orange-ink); text-decoration-color: currentColor; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+  :focus-visible { outline: 1px solid var(--orange); outline-offset: 3px; }
+  [hidden] { display: none !important; }
 
-  /* ---------- background: aurora glow, pixel stars, perspective grid ---------- */
-  .aurora {
-    position: fixed;
-    inset: -20vh -20vw auto;
-    height: 85vh;
-    z-index: 0;
-    pointer-events: none;
-    filter: blur(80px);
-    opacity: 0.5;
-    mask-image: linear-gradient(to bottom, #000 30%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
-  }
-  .aurora i { position: absolute; border-radius: 50%; mix-blend-mode: screen; animation: drift 22s ease-in-out infinite alternate; }
-  .aurora i:nth-child(1) { width: 55vw; height: 40vh; left: 8vw; top: 10vh; background: #3a1fd6; }
-  .aurora i:nth-child(2) { width: 45vw; height: 35vh; left: 55vw; top: 5vh; background: #c4146a; animation-duration: 27s; animation-delay: -8s; }
-  .aurora i:nth-child(3) { width: 40vw; height: 30vh; left: 30vw; top: 32vh; background: #0b8fb6; animation-duration: 31s; animation-delay: -15s; }
-  @keyframes drift {
-    0% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(12vw, 6vh) scale(1.2); }
-    100% { transform: translate(-10vw, -4vh) scale(0.9); }
-  }
-  .grid {
-    position: fixed;
-    left: -50%;
-    right: -50%;
-    bottom: 0;
-    height: 42vh;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(to bottom, var(--bg), transparent 35%),
-      repeating-linear-gradient(to right, rgba(255, 46, 136, 0.35) 0 2px, transparent 2px 70px),
-      repeating-linear-gradient(to bottom, rgba(255, 46, 136, 0.35) 0 2px, transparent 2px 46px);
-    transform: perspective(300px) rotateX(58deg);
-    transform-origin: bottom;
-    animation: roll 2.2s linear infinite;
-    opacity: 0.45;
-  }
-  @keyframes roll { to { background-position: 0 0, 0 0, 0 46px; } }
-  #stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  /* ---------- drawing marks behind the page ---------- */
+  .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .backdrop svg.big { position: absolute; right: -8vw; bottom: -16vh; width: 70vh; height: 70vh; color: var(--mark); }
+  .ruler { position: absolute; left: 0; right: 0; top: 0; height: 10px; background: repeating-linear-gradient(90deg, var(--grid-b) 0 1px, transparent 1px 12px), repeating-linear-gradient(90deg, var(--mark) 0 1px, transparent 1px 120px); background-size: auto 5px, auto 10px; background-repeat: repeat-x; }
+  .ruler.v { right: auto; bottom: 0; width: 10px; height: auto; background: repeating-linear-gradient(0deg, var(--grid-b) 0 1px, transparent 1px 12px), repeating-linear-gradient(0deg, var(--mark) 0 1px, transparent 1px 120px); background-size: 5px auto, 10px auto; background-repeat: repeat-y; }
+  .cross { position: absolute; width: 18px; height: 18px; }
+  .cross::before, .cross::after { content: ""; position: absolute; background: var(--print-dim); opacity: .5; }
+  .cross::before { left: 8px; top: 0; width: 1px; height: 18px; }
+  .cross::after { top: 8px; left: 0; height: 1px; width: 18px; }
+  .coord { position: absolute; font: 400 9.5px var(--mono); letter-spacing: .08em; color: var(--print-dim); opacity: .8; }
 
-  /* CRT glass over everything */
-  .crt {
-    position: fixed;
-    inset: 0;
-    z-index: 80;
-    pointer-events: none;
-    background:
-      repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.22) 2px 3px),
-      radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
-    animation: flicker 7s infinite steps(1);
-  }
-  @keyframes flicker { 0%, 100% { opacity: 1; } 41% { opacity: 0.9; } 42% { opacity: 1; } 77% { opacity: 0.94; } }
+  .container { position: relative; z-index: 1; width: 1120px; max-width: calc(100% - 64px); margin: 0 auto; }
 
-  .container { position: relative; z-index: 1; width: 980px; max-width: calc(100% - 32px); margin: 0 auto; }
+  /* ---------- printed labels ---------- */
+  .lb { font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--print); }
+  .mono { font-family: var(--mono); }
+  .legend { display: flex; align-items: center; gap: 10px; margin: 0; font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--print); white-space: nowrap; }
+  .legend .ln { flex: 1; min-width: 12px; height: 1px; background: var(--rule); position: relative; }
+  .legend .ln::before, .legend .ln::after { content: ""; position: absolute; top: 0; width: 1px; height: 6px; background: var(--rule); }
+  .legend .ln::before { left: 0; } .legend .ln::after { right: 0; }
+  .legend .dim { color: var(--print-dim); font-family: var(--mono); letter-spacing: .08em; }
 
+  /* ---------- keys and lights ---------- */
+  .k {
+    position: relative; display: inline-grid; place-items: center; border-radius: 4px; text-decoration: none; user-select: none;
+    font: 400 11px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    transition: transform 70ms linear, box-shadow 70ms linear;
+    --kshadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -2px 1px rgba(0,0,0,.35), 0 1px 0 rgba(0,0,0,.6), 0 3px 3px -1px rgba(0,0,0,.35), 0 9px 14px -6px rgba(0,0,0,.45);
+    --kpress: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -1px 1px rgba(0,0,0,.3), 0 0 0 rgba(0,0,0,.6), 0 1px 1px rgba(0,0,0,.35), 0 3px 5px -3px rgba(0,0,0,.4);
+    box-shadow: var(--kshadow);
+  }
+  .k:active, .k.press { transform: translateY(2px); box-shadow: var(--kpress); }
+  .k.black { background: linear-gradient(180deg, var(--k-black-1), var(--k-black-2)); color: #eaeae6; }
+  .k.grey { background: linear-gradient(180deg, var(--k-grey-1), var(--k-grey-2)); color: var(--k-grey-ink); --kshadow: var(--gshadow); }
+  .k.orange { background: linear-gradient(180deg, var(--k-orange-1), var(--k-orange-2)); color: #fff; --kshadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 1px rgba(120,30,0,.35), 0 1px 0 rgba(120,30,0,.6), 0 3px 3px -1px rgba(0,0,0,.3), 0 9px 14px -6px rgba(0,0,0,.4); }
+  .k.black:hover, .k.orange:hover { color: #fff; } .k.grey:hover { color: var(--k-grey-ink); }
+  .k.off { cursor: default; opacity: .55; }
+  .k.off:active { transform: none; box-shadow: var(--kshadow); }
+  .k2 { display: grid; place-items: stretch; grid-template-rows: 1fr 1fr; width: 80px; height: 44px; border-radius: 3px; overflow: hidden; font: 400 10.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; }
+  .k2 span { display: grid; place-items: center; }
+  .k2 .t { background: linear-gradient(180deg, var(--k-black-1), var(--k-black-2)); color: #eaeae6; }
+  .k2 .b { background: linear-gradient(180deg, var(--k-grey-1), var(--k-grey-2)); color: var(--k-grey-ink); }
+  .k2.on .b { background: linear-gradient(180deg, var(--k-orange-1), var(--k-orange-2)); color: #fff; }
+  .led { width: 6px; height: 6px; border-radius: 50%; flex: none; display: inline-block; background: var(--led-off); box-shadow: inset 0 1px 1px rgba(0,0,0,.35); transition: background .12s, box-shadow .12s; }
+  .led.on { background: radial-gradient(circle at 40% 35%, #ffb08f, var(--led-on) 60%); box-shadow: 0 0 5px 1px color-mix(in srgb, var(--led-on) 55%, transparent); }
+  .led.slow { animation: pulse 2.4s steps(1) infinite; }
+  @keyframes pulse { 50% { background: var(--led-off); box-shadow: inset 0 1px 1px rgba(0,0,0,.35); } }
 
-  /* chunky pixel buttons with a stepped shadow */
-  .pbtn {
-    display: inline-block;
-    padding: 10px 12px;
-    font: 10px/1 var(--pixel);
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #000;
-    background: var(--yellow);
-    border: 0;
-    cursor: pointer;
-    box-shadow: 0 0 0 3px #000, inset -3px -3px 0 rgba(0, 0, 0, 0.3), inset 3px 3px 0 rgba(255, 255, 255, 0.55), 4px 4px 0 3px #000;
-  }
-  .pbtn:hover { color: #000; background: #ffc6e4; }
-  .pbtn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 3px #000, inset 3px 3px 0 rgba(0, 0, 0, 0.3); }
+  /* ---------- black display ---------- */
+  .display { position: relative; display: block; background: var(--glass); color: var(--g-ink); border-radius: 4px; overflow: hidden; box-shadow: var(--disp-shadow); }
+  .display::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(170deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.02) 22%, transparent 23%); }
 
-  /* ---------- marquee header ---------- */
-  .masthead {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 30px 0 30px;
-  }
-  .brand { display: flex; align-items: center; gap: 22px; color: #fff; text-decoration: none; }
-  .brand:hover { color: #fff; }
-  .app-icon {
-    position: relative;
-    flex: none;
-    width: 72px;
-    height: 72px;
-    background: var(--panel-2);
-    box-shadow: 0 0 0 4px #000, inset 0 0 0 3px var(--yellow), inset 0 0 0 6px #000, 0 0 24px rgba(255, 168, 214, 0.35), 6px 6px 0 4px #000;
-    -webkit-box-reflect: below 12px linear-gradient(transparent 60%, rgba(255, 255, 255, 0.16));
-  }
-  .app-icon svg { position: absolute; inset: 12px; width: 48px; height: 48px; filter: drop-shadow(0 0 6px rgba(255, 46, 136, 0.6)); }
-  .app-icon .orbit { position: absolute; inset: -14px; border-radius: 50%; animation: spin 6s linear infinite; }
-  .app-icon .orbit::after {
-    content: "";
-    position: absolute;
-    top: -3px; left: 50%;
-    width: 6px; height: 6px;
-    margin-left: -3px;
-    background: #fff;
-    box-shadow: 0 0 6px 2px var(--cyan), 0 0 14px 4px rgba(46, 230, 255, 0.6);
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* ---------- header ---------- */
+  .top { display: flex; align-items: center; gap: 24px; padding: 34px 0 26px; }
+  .brand { display: flex; align-items: center; gap: 4px; color: var(--print); text-decoration: none; }
+  .brand:hover { color: var(--print); }
+  .brand svg { width: 52px; height: 52px; margin-left: -8px; }
+  .brand h1 { margin: 0; font: 300 40px/1 var(--sans); letter-spacing: -.04em; }
+  .brand h1 i { font-style: normal; color: var(--orange); font-weight: 500; }
+  .spec { display: flex; flex-direction: column; gap: 6px; padding-left: 18px; border-left: 1px solid var(--rule); font: 400 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); white-space: nowrap; }
+  .spec b { font-weight: 400; color: var(--orange-ink); }
+  .tiers { margin-left: auto; display: flex; align-items: flex-end; gap: 14px; }
+  .tier { display: flex; flex-direction: column; align-items: center; gap: 7px; }
 
-  .logo {
-    position: relative;
-    margin: 0;
-    font: clamp(22px, 6vw, 58px)/1 var(--pixel);
-    letter-spacing: 2px;
-  }
-  /* fighting-game style title: hot gradient fill, black outline, deep shadow */
-  .logo .fill {
-    display: inline-block;
-    background: linear-gradient(to bottom, #ffe3f1 0%, var(--yellow) 28%, var(--orange) 52%, var(--red) 75%, #8a1fd6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(5px 6px 0 var(--violet));
-  }
-  .logo .tld {
-    background: linear-gradient(to bottom, #d6fbff, var(--cyan) 45%, #1c6dff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
-  .logo .shine {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shine 4.5s ease-in-out infinite;
-  }
-  @keyframes shine { 0%, 50% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
-  .slogan {
-    display: block;
-    margin-top: 14px;
-    font: 22px/1 var(--term);
-    color: var(--cyan);
-    text-shadow: 0 0 8px rgba(46, 230, 255, 0.6);
-  }
-  .slogan .caret { display: inline-block; width: 10px; height: 18px; margin-left: 3px; vertical-align: -2px; background: var(--cyan); animation: blink 0.8s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  /* ---------- nav keys ---------- */
+  .nav { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .nav li { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .nav .k { width: 96px; height: 38px; }
+  .nav .sep { flex: 1; align-self: center; height: 1px; background: var(--rule); min-width: 20px; }
 
-  /* "Now in beta" starburst */
-  .burst { position: relative; flex: none; width: 108px; height: 108px; display: grid; place-items: center; animation: bob 3s ease-in-out infinite; }
-  .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.7)); animation: spin 16s linear infinite; }
-  .burst span { position: relative; transform: rotate(-12deg); font: 8px/1.6 var(--pixel); text-align: center; text-transform: uppercase; color: #fff; text-shadow: 2px 2px 0 #000; }
-  .burst b { display: block; font-size: 13px; color: var(--yellow); font-weight: normal; }
-  @keyframes bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.05); } }
-
-  /* ---------- nav with a sliding pixel cursor ---------- */
-  .nav {
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    margin: 0;
-    padding: 6px 8px;
-    list-style: none;
-    background: #000;
-    box-shadow: 0 0 0 3px var(--violet), 0 0 0 6px #000, 0 0 22px rgba(138, 92, 255, 0.45);
-  }
-  .nav li { position: relative; z-index: 1; }
-  .nav a {
-    display: block;
-    padding: 12px 16px 12px 28px;
-    font: 11px/1 var(--pixel);
-    text-transform: uppercase;
-    color: var(--muted);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .nav a:hover, .nav a.on { color: #fff; }
-  .nav .lamp {
-    position: absolute;
-    z-index: 0;
-    left: 0;
-    width: 0;
-    background: rgba(255, 46, 136, 0.18);
-    box-shadow: inset 0 0 0 2px var(--pink), 0 0 14px rgba(255, 46, 136, 0.5);
-    transition: left 0.35s steps(6), width 0.35s steps(6);
-    pointer-events: none;
-  }
-  .nav .lamp::before { /* blinking arrow */
-    content: "";
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    margin-top: -5px;
-    border: 5px solid transparent;
-    border-left: 7px solid var(--yellow);
-    animation: blink 0.6s steps(1) infinite;
-  }
-  .nav .new-li { margin-left: auto; }
-  .nav .new-li a { color: var(--yellow); }
-
-  /* ---------- news ticker ---------- */
-  .ticker { display: flex; align-items: center; overflow: hidden; margin-top: 6px; background: #000; border-bottom: 3px solid var(--violet); }
-  .ticker .label { flex: none; padding: 7px 10px; font: 9px/1.6 var(--pixel); text-transform: uppercase; color: #000; background: var(--yellow); animation: label 1.2s steps(1) infinite; }
-  @keyframes label { 50% { background: var(--pink); color: #fff; } }
-  .ticker .track { flex: 1; overflow: hidden; }
-  .ticker .run { display: inline-flex; gap: 56px; padding-left: 24px; white-space: nowrap; font-size: 22px; color: #cfcaf5; animation: tick 32s linear infinite; }
-  .ticker .run b { color: var(--cyan); font-weight: normal; }
-  .ticker:hover .run { animation-play-state: paused; }
+  /* ---------- news ticker on a display strip ---------- */
+  .ticker { display: flex; align-items: center; margin-top: 22px; height: 40px; }
+  .ticker .label { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px; height: 100%; border-right: 1px solid var(--g-line); font: 400 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--orange); }
+  .ticker .track { flex: 1; overflow: hidden; height: 100%; display: flex; align-items: center; mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+  .ticker .run { display: inline-flex; gap: 48px; padding-left: 24px; white-space: nowrap; font: 300 13.5px var(--sans); color: var(--g-ink); animation: tick 70s linear infinite; }
+  .ticker .run b { font: 400 11px var(--mono); letter-spacing: .06em; color: var(--g-mute); margin-right: 8px; }
+  .ticker:hover .run, .still .ticker .run { animation-play-state: paused; }
+  .ticker .clock { flex: none; padding: 0 16px; border-left: 1px solid var(--g-line); height: 100%; display: flex; align-items: center; font: 500 20px/1 var(--mono); letter-spacing: -.04em; color: var(--g-ink); }
+  .ticker .clock s { text-decoration: none; color: #2e2e2f; }
   @keyframes tick { to { transform: translateX(-50%); } }
 
-  /* ---------- main screen ---------- */
-  .page {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 270px;
-    gap: 28px;
-    margin-top: 22px;
-    padding: 26px;
-    background: rgba(10, 8, 26, 0.9);
-    box-shadow: 0 0 0 3px #000, 0 0 0 6px #2a2460, 0 0 0 9px #000, 0 24px 60px rgba(0, 0, 0, 0.7);
-  }
+  /* ---------- page layout ---------- */
+  .page { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 48px; margin-top: 40px; }
 
-  /* title screen box with a spinning neon border */
-  .hero { position: relative; margin-bottom: 30px; padding: 26px 26px 24px; text-align: center; isolation: isolate; overflow: hidden; }
-  .hero::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 1600px;
-    height: 1600px;
-    margin: -800px 0 0 -800px;
-    z-index: -2;
-    background: conic-gradient(from 0deg, var(--cyan), var(--violet) 25%, var(--pink) 50%, var(--yellow) 75%, var(--cyan));
-    animation: spin 6s linear infinite;
-  }
-  .hero::after {
-    content: "";
-    position: absolute;
-    inset: 4px;
-    z-index: -1;
-    background:
-      radial-gradient(ellipse 70% 120% at 50% 120%, rgba(255, 46, 136, 0.25), transparent 60%),
-      repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255, 255, 255, 0.025) 3px 4px),
-      #0b0920;
-  }
-  .hero h2 { margin: 0 0 14px; font: clamp(15px, 2.6vw, 22px)/1.4 var(--pixel); color: #fff; text-shadow: 3px 3px 0 var(--pink); }
-  .hero p { margin: 0; font-size: 24px; color: #d8d4ff; }
+  /* welcome display */
+  .hero { padding: 26px 28px 24px; margin-bottom: 48px; }
+  .hero .row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--g-line); font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--g-dim); }
+  .hero .row .lit { color: var(--orange); }
+  .hero .row .count { margin-left: auto; color: var(--g-mute); }
+  .hero .row .count b { font: 500 20px/1 var(--mono); color: var(--g-ink); margin-left: 6px; }
+  .hero h2 { margin: 0 0 10px; font: 300 30px/1.15 var(--sans); letter-spacing: -.03em; }
+  .hero p { margin: 0; max-width: 560px; font-size: 15px; color: var(--g-mute); }
 
-  .section-title {
-    margin: 0 0 22px;
-    text-align: center;
-    font: clamp(15px, 2.4vw, 20px)/1.4 var(--pixel);
-    color: var(--yellow);
-    text-shadow: 3px 3px 0 #6a1fb3, 0 0 14px rgba(255, 168, 214, 0.4);
-    scroll-margin-top: 16px;
-  }
+  .section-title { margin-bottom: 26px; scroll-margin-top: 24px; }
 
-  /* game select cards */
-  .games { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
-  .game {
-    position: relative;
-    display: grid;
-    grid-template-columns: 250px minmax(0, 1fr);
-    gap: 22px;
-    padding: 20px;
-    background: linear-gradient(to bottom, var(--panel-2), var(--panel));
-    box-shadow: 0 0 0 3px #000, 0 0 0 6px #2f2a6b, 0 0 0 9px #000, 8px 10px 0 9px rgba(0, 0, 0, 0.6);
-    transition: transform 0.2s steps(3), box-shadow 0.2s steps(3);
-  }
-  .game:hover, .game:focus-within {
-    transform: translate(-3px, -5px);
-    box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--cyan), 0 0 0 9px #000, 0 0 30px rgba(46, 230, 255, 0.45), 12px 16px 0 9px rgba(0, 0, 0, 0.6);
-  }
-  .game.pink:hover, .game.pink:focus-within { box-shadow: 0 0 0 3px #000, 0 0 0 6px var(--pink), 0 0 0 9px #000, 0 0 30px rgba(255, 46, 136, 0.5), 12px 16px 0 9px rgba(0, 0, 0, 0.6); }
-
-  .shot { align-self: start; margin-bottom: 54px; }
-  .shot .frame {
-    display: block;
-    position: relative;
-    aspect-ratio: 3 / 2;
-    overflow: hidden;
-    background: #000;
-    box-shadow: 0 0 0 3px #000, 0 0 0 6px #3b3480, 0 0 0 9px #000;
-    -webkit-box-reflect: below 14px linear-gradient(transparent 66%, rgba(255, 255, 255, 0.18));
-  }
-  .shot .frame.dark { background: radial-gradient(ellipse at 50% 30%, #2f2a6b, #07061a 80%); }
-  .shot .frame::before { /* screen scanlines */
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.3) 2px 3px), radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.12), transparent 55%);
-    pointer-events: none;
-  }
-  .shot .frame::after { /* light sweep */
-    content: "";
-    position: absolute;
-    z-index: 3;
-    top: -40%; bottom: -40%;
-    width: 35%;
-    left: -70%;
-    transform: rotate(18deg);
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
-    pointer-events: none;
-  }
-  .game:hover .shot .frame::after { animation: sweep-once 0.8s ease-out; }
-  @keyframes sweep-once { from { left: -70%; } to { left: 150%; } }
-  .shot img, .shot canvas { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; }
-  .shot img { padding: 6%; }
+  /* games: flat on the surface, separated by printed rules */
+  .games { list-style: none; margin: 0; padding: 0; display: grid; gap: 44px; }
+  .game { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; scroll-margin-top: 24px; }
+  .game .head { grid-column: 1 / -1; }
+  .game .head h3 { margin: 0; font: inherit; }
+  .game .head h3 a { color: inherit; text-decoration: none; }
+  .game .head h3 a:hover { color: var(--orange-ink); }
+  .game .head .num { color: var(--orange-ink); font-family: var(--mono); letter-spacing: .08em; }
+  .shot { align-self: start; }
+  .shot .display { aspect-ratio: 3 / 2; }
+  .shot img, .shot canvas { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+  .shot img { padding: 7%; }
   .shot canvas { image-rendering: pixelated; }
-
-  .game h3 { margin: 4px 0 12px; font: 17px/1.3 var(--pixel); color: #fff; text-transform: uppercase; text-shadow: 3px 3px 0 var(--violet); }
-  .game h3 a { color: inherit; text-decoration: none; }
-  .game h3 a:hover { color: var(--yellow); }
-  .meta { margin: 0 0 12px; }
-  .tag {
-    display: inline-block;
-    margin: 0 6px 6px 0;
-    padding: 5px 6px;
-    font: 8px/1 var(--pixel);
-    text-transform: uppercase;
-    color: #cfcaf5;
-    background: #000;
-    box-shadow: inset 0 0 0 2px #3b3480;
-  }
-  .tag.new { color: #000; background: var(--yellow); box-shadow: none; animation: label 1s steps(1) infinite; }
-  .tag.web { color: #000; background: var(--cyan); box-shadow: none; }
-  .game p.desc { margin: 0 0 18px; font-size: 21px; color: #d0ccf2; }
-
-  .play { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
-  .pbtn.big { padding: 13px 16px; font-size: 12px; background: var(--pink); color: #fff; text-shadow: 2px 2px 0 #000; animation: glow 1.6s ease-in-out infinite; }
-  .pbtn.big:hover { background: #ff5aa3; color: #fff; }
-  .pbtn.big::after { content: " \25B6"; }
-  @keyframes glow { 50% { filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.9)); } }
-  .pbtn.off, .pbtn.off:hover { background: #2a2650; color: var(--muted); text-shadow: none; cursor: default; transform: none; box-shadow: 0 0 0 3px #000, 4px 4px 0 3px #000; animation: none; }
-  .game p.fine { margin: 14px 0 0; font-size: 18px; color: var(--muted); }
-  .play .note { font: 9px/1.5 var(--pixel); color: var(--yellow); animation: blink 1.4s steps(1) infinite; }
+  .shot .cap { display: flex; justify-content: space-between; margin-top: 8px; font: 400 9.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .game .name { margin: 0 0 8px; font: 300 26px/1.15 var(--sans); letter-spacing: -.03em; color: var(--print); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 12px; }
+  .tag { font: 400 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .tag.new { color: var(--orange-ink); }
+  .tag.new::before { content: "\25CF  "; }
+  .game p.desc { margin: 0 0 18px; max-width: 620px; }
+  .play { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; }
+  .play .k { height: 40px; padding: 0 18px; min-width: 120px; }
+  .play .note { display: inline-flex; align-items: center; gap: 8px; font: 400 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .game p.fine { margin: 14px 0 0; max-width: 620px; font-size: 13px; color: var(--print-dim); }
 
   /* ---------- sidebar ---------- */
-  .side { display: grid; gap: 24px; align-content: start; }
-  .widget { background: #0b0920; box-shadow: 0 0 0 3px #000, 0 0 0 6px #2f2a6b, 0 0 0 9px #000; }
-  .widget h4 { margin: 0; padding: 10px 12px; font: 10px/1.4 var(--pixel); text-transform: uppercase; color: #000; background: var(--cyan); }
-  .widget.status h4 { background: var(--violet); color: #fff; text-shadow: 2px 2px 0 #000; }
-  .widget.newsw h4 { background: var(--pink); color: #fff; text-shadow: 2px 2px 0 #000; }
-  .widget .in { padding: 12px; }
-  .widget p { margin: 0; color: #d0ccf2; }
-  .widget ul { list-style: none; margin: 0; padding: 0; }
-  .links a { position: relative; display: block; padding: 5px 0 5px 22px; text-decoration: none; font-size: 22px; }
-  .links a::before { content: "\25B6"; position: absolute; left: 0; font-size: 14px; top: 9px; color: var(--pink); opacity: 0.4; }
-  .links a:hover::before { opacity: 1; animation: blink 0.5s steps(1) infinite; }
-  .news li { padding: 7px 0; border-bottom: 2px dotted #2a2460; color: #d0ccf2; }
-  .news li:last-child { border-bottom: 0; }
-  .news time { display: block; margin-bottom: 4px; font: 8px/1.4 var(--pixel); color: var(--yellow); text-transform: uppercase; }
-  .status-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; color: #d0ccf2; }
-  .led { flex: none; width: 10px; height: 10px; background: var(--lime); box-shadow: 0 0 0 2px #000, 0 0 10px var(--lime); animation: led 1.6s steps(2) infinite; }
-  .led.wait { background: var(--orange); box-shadow: 0 0 0 2px #000, 0 0 10px var(--orange); animation-duration: 2.4s; }
-  @keyframes led { 50% { opacity: 0.45; } }
+  .side { display: grid; gap: 36px; align-content: start; }
+  .side section { scroll-margin-top: 24px; }
+  .side .in { padding-top: 14px; }
+  .side p { margin: 0; }
+  .side ul { list-style: none; margin: 0; padding: 0; }
+  .links a { display: flex; align-items: center; gap: 10px; padding: 4px 0; text-decoration: none; color: var(--print-dim); transition: color .1s; }
+  .links a:hover { color: var(--print); }
+  .links a:hover .led { background: radial-gradient(circle at 40% 35%, #ffb08f, var(--led-on) 60%); }
+  .status-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .news { max-height: 520px; overflow: auto; padding-right: 6px; }
+  .news li { padding: 10px 0; border-top: 1px solid var(--rule); font-size: 13.5px; }
+  .news li:first-child { border-top: 0; padding-top: 0; }
+  .news time { display: block; margin-bottom: 4px; font: 400 10px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--print-dim); }
+  .news li:first-child time { color: var(--orange-ink); }
 
   /* ---------- footer ---------- */
-  .footer { padding: 34px 0 44px; text-align: center; color: var(--muted); font-size: 19px; }
-  .footer nav { margin-bottom: 6px; }
-  .footer nav a { margin: 0 6px; }
-  .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
-  .badge { display: inline-flex; font: 7px/1 var(--pixel); text-transform: uppercase; box-shadow: 0 0 0 2px #000; }
-  .badge span { padding: 4px 5px; }
-  .badge span:first-child { background: #2a2650; color: #cfcaf5; }
-  .badge.b1 span:last-child { background: var(--pink); color: #fff; }
-  .badge.b2 span:last-child { background: var(--cyan); color: #000; }
-  .badge.b3 span:last-child { background: var(--violet); color: #fff; }
-  .badge.b4 span:last-child { background: var(--yellow); color: #000; }
+  .footer { margin-top: 72px; padding: 22px 0 56px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; font-size: 13px; color: var(--print-dim); }
+  .footer nav { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+  .footer nav a { color: var(--print-dim); text-decoration: none; }
+  .footer nav a:hover { color: var(--print); }
+  .footer .end { margin-left: auto; font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 
-  /* scroll-in */
-  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s steps(5), transform 0.5s steps(5); }
-  .reveal.in { opacity: 1; transform: none; }
-  .no-js .reveal { opacity: 1; transform: none; }
+  /* ---------- settings sheet ---------- */
+  .sheet { position: absolute; z-index: 20; top: 92px; right: 0; width: min(330px, 100%); background: var(--glass); color: var(--g-ink); border-radius: 4px; padding: 16px 18px 12px; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 18px 40px -10px rgba(0,0,0,.6); animation: fade 120ms linear; }
+  @keyframes fade { from { opacity: 0; } }
+  .sheet h4 { margin: 0 0 12px; display: flex; justify-content: space-between; font: 400 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--g-mute); }
+  .sheet h4 b { color: var(--orange); font-weight: 400; }
+  .set { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--g-line); }
+  .set > span { font: 300 13px var(--sans); }
+  .set small { display: block; font: 400 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--g-dim); }
+  .opts { display: flex; gap: 8px; }
+  .sk { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .sk .k { width: 48px; height: 28px; font-size: 10px; }
+  .sk .led { width: 5px; height: 5px; }
 
   /* ---------- narrow screens ---------- */
-  @media (max-width: 840px) {
-    .page { grid-template-columns: minmax(0, 1fr); padding: 18px; }
-    .game { grid-template-columns: minmax(0, 1fr); }
-    .shot { max-width: 320px; width: 100%; margin: 0 auto 70px; }
-    .shot .frame { -webkit-box-reflect: below 14px linear-gradient(transparent 74%, rgba(255, 255, 255, 0.18)); }
+  @media (max-width: 900px) {
+    .page { grid-template-columns: minmax(0, 1fr); }
+    .side { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .container { max-width: calc(100% - 32px); }
+    .spec { display: none; }
+    .game { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .shot { max-width: 360px; }
+    .nav { gap: 10px; }
+    .nav .k { width: auto; padding: 0 14px; }
+    .nav .sep { display: none; }
   }
   @media (max-width: 560px) {
-    body { font-size: 20px; }
-    .container { max-width: calc(100% - 24px); }
-    .masthead { padding: 24px 0 26px; }
-    .brand { gap: 16px; }
-    .app-icon { width: 48px; height: 48px; }
-    .app-icon svg { inset: 8px; width: 32px; height: 32px; }
-    .slogan { font-size: 18px; margin-top: 10px; }
-    .burst { display: none; }
-    .nav a { padding: 11px 8px 11px 22px; font-size: 9px; }
-    .nav .lamp::before { left: 7px; }
-    .nav .new-li { display: none; }
-    .page { padding: 16px; }
-    .game { padding: 16px; }
-    .game h3 { font-size: 14px; }
+    .top { padding: 26px 0 20px; gap: 12px; }
+    .brand svg { width: 40px; height: 40px; }
+    .brand h1 { font-size: 30px; }
+    .tier.opt { display: none; }
+    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .nav .k { width: 100%; padding: 0 6px; }
+    .ticker .clock { display: none; }
+    .hero { padding: 20px 18px; }
+    .hero h2 { font-size: 25px; }
+    .coord, .cross { display: none; }
+    .sheet { top: 80px; }
+    .footer .end { margin-left: 0; }
   }
-
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation: none !important; transition: none !important; }
-    .reveal { opacity: 1; transform: none; }
   }
 </style>
 </head>
-<body class="no-js">
+<body>
 
-<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
-<div class="grid" aria-hidden="true"></div>
-<canvas id="stars" aria-hidden="true"></canvas>
-<div class="crt" aria-hidden="true"></div>
+<div class="backdrop" aria-hidden="true">
+  <div class="ruler"></div><div class="ruler v"></div>
+  <svg class="big" viewBox="0 0 100 100"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width=".4"/><circle cx="50" cy="50" r="9" fill="none" stroke="currentColor" stroke-width=".4"/><path d="M50 30v40M30 50h40" stroke="currentColor" stroke-width=".15" stroke-dasharray="1 1"/></svg>
+  <span class="cross" style="left:18px;top:18px"></span><span class="cross" style="right:18px;top:18px"></span><span class="cross" style="left:18px;bottom:18px"></span><span class="cross" style="right:18px;bottom:18px"></span>
+  <span class="coord" style="left:44px;top:22px">a1</span><span class="coord" style="right:44px;top:22px">a8</span><span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · hm-1 rev 4</span>
+</div>
 
-<div class="container">
-  <header class="masthead">
+<div class="container" id="top">
+  <header class="top">
     <a class="brand" href="/">
-      <span class="app-icon" aria-hidden="true">
-        <span class="orbit"></span>
-        <svg viewBox="0 0 100 100"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="#f2f0ea" stroke-width="6"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="#f2f0ea" stroke-width="6"/><circle cx="50" cy="50" r="9" fill="#ff2e88"/></svg>
-      </span>
-      <span>
-        <h1 class="logo"><span class="fill">HAMMI<span class="tld">.CA</span></span><span class="shine" aria-hidden="true">HAMMI.CA</span></h1>
-        <span class="slogan"><span id="slogan">games &amp; stuff, made after dark</span><span class="caret" aria-hidden="true"></span></span>
-      </span>
+      <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="var(--orange)"/></svg>
+      <h1>hammi<i>.</i>ca</h1>
     </a>
-    <div class="burst" aria-label="Now in beta">
-      <svg viewBox="0 0 100 100" aria-hidden="true" shape-rendering="crispEdges">
-        <polygon fill="#ff2e88" stroke="#000" stroke-width="4" points="50,2 58,17 74,8 74,26 92,26 83,42 98,50 83,58 92,74 74,74 74,92 58,83 50,98 42,83 26,92 26,74 8,74 17,58 2,50 17,42 8,26 26,26 26,8 42,17"/>
-      </svg>
-      <span>Now in<b>Beta!</b></span>
+    <div class="spec"><span><b>hm-1</b> · games &amp; stuff</span><span>made by hand · beta</span></div>
+    <div class="tiers">
+      <div class="tier opt"><span class="led" id="motion-led"></span><button class="k2 k" id="motion" aria-pressed="true"><span class="t">news</span><span class="b">scroll</span></button></div>
+      <div class="tier"><span class="led" id="set-led"></span><button class="k2 k" id="settings" aria-expanded="false" aria-controls="sheet"><span class="t">settings</span><span class="b">system</span></button></div>
+    </div>
+    <div class="sheet" id="sheet" hidden role="dialog" aria-label="Settings">
+      <h4><span>settings</span><b>system</b></h4>
+      <div class="set"><span>Mode<small>light or dark</small></span><div class="opts" data-set="theme"><div class="sk"><span class="led"></span><button class="k grey" data-v="light">light</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="dark">dark</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="auto">auto</button></div></div></div>
+      <div class="set"><span>Accent<small>key and light colour</small></span><div class="opts" data-set="accent"><div class="sk"><span class="led"></span><button class="k orange" data-v="orange">orng</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="blue" style="color:#7cc0ff">blue</button></div></div></div>
     </div>
   </header>
 
-  <ul class="nav" id="nav">
-    <li><a class="on" href="#top">Home</a></li>
-    <li><a href="#games">Games</a></li>
-    <li><a href="https://wall.hammi.ca/">Pixel Wall</a></li>
-    <li><a href="#about">About</a></li>
-    <li class="new-li"><a href="#news">What's new</a></li>
-    <li class="lamp" aria-hidden="true"></li>
+  <ul class="nav" id="nav" aria-label="Sections">
+    <li><span class="led on"></span><a class="k orange" href="#top">Home</a></li>
+    <li><span class="led"></span><a class="k black" href="#games">Games</a></li>
+    <li><span class="led"></span><a class="k black" href="https://wall.hammi.ca/">Pixel Wall</a></li>
+    <li><span class="led"></span><a class="k black" href="/chat/">Chat</a></li>
+    <li><span class="led"></span><a class="k black" href="#about">About</a></li>
+    <li class="sep" aria-hidden="true"></li>
+    <li><span class="led"></span><a class="k grey" href="#news">What's new</a></li>
   </ul>
 
-  <div class="ticker" aria-label="Latest news">
-    <span class="label">News</span>
+  <div class="ticker display" aria-label="Latest news">
+    <span class="label"><span class="led on"></span>news</span>
     <div class="track">
-      <div class="run">
-        <span><b>NOV 26</b> New: Hammi Chat, a chat app for Ember servers!</span>
-        <span><b>NOV 22</b> Orbit Climb has 2-player split-screen co-op!</span>
-        <span><b>NOV 22</b> Orbit Climb has sound now!</span>
-        <span><b>NOV 22</b> Orbit Climb now works with a game controller!</span>
-        <span><b>NOV 22</b> Orbit Climb update: three worlds and a final boss!</span>
-        <span><b>NOV 22</b> New game: Orbit Climb. Parkour up the tower!</span>
-        <span><b>NOV 21</b> New: Loopsprout. Hum a tune and make music!</span>
-        <span><b>NOV 19</b> New game: Loose Thread. Play it in your browser!</span>
-        <span><b>NOV 19</b> GameShelf for Windows is out!</span>
-        <span><b>NOV 5</b> The site got a new look.</span>
-        <span><b>NOV 3</b> Velora is now called Nookara.</span>
-        <span><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
-        <span><b>SOON</b> House Edge for Windows.</span>
-        <span aria-hidden="true"><b>NOV 26</b> New: Hammi Chat, a chat app for Ember servers!</span>
-        <span aria-hidden="true"><b>NOV 22</b> Orbit Climb has 2-player split-screen co-op!</span>
-        <span aria-hidden="true"><b>NOV 22</b> Orbit Climb has sound now!</span>
-        <span aria-hidden="true"><b>NOV 22</b> Orbit Climb now works with a game controller!</span>
-        <span aria-hidden="true"><b>NOV 22</b> Orbit Climb update: three worlds and a final boss!</span>
-        <span aria-hidden="true"><b>NOV 22</b> New game: Orbit Climb. Parkour up the tower!</span>
-        <span aria-hidden="true"><b>NOV 21</b> New: Loopsprout. Hum a tune and make music!</span>
-        <span aria-hidden="true"><b>NOV 19</b> New game: Loose Thread. Play it in your browser!</span>
-        <span aria-hidden="true"><b>NOV 19</b> GameShelf for Windows is out!</span>
-        <span aria-hidden="true"><b>NOV 5</b> The site got a new look.</span>
-        <span aria-hidden="true"><b>NOV 3</b> Velora is now called Nookara.</span>
-        <span aria-hidden="true"><b>OCT 27</b> Pixel Wall is open. Come paint!</span>
-        <span aria-hidden="true"><b>SOON</b> House Edge for Windows.</span>
+      <div class="run" id="run">
+        <span><b>NOV 26</b>hammi.ca has a new look, to match Hammi Chat.</span>
+        <span><b>NOV 26</b>New: Hammi Chat, a chat app for Ember servers.</span>
+        <span><b>NOV 22</b>Orbit Climb has 2-player split-screen co-op.</span>
+        <span><b>NOV 22</b>Orbit Climb has sound now.</span>
+        <span><b>NOV 22</b>Orbit Climb now works with a game controller.</span>
+        <span><b>NOV 22</b>Orbit Climb update: three worlds and a final boss.</span>
+        <span><b>NOV 22</b>New game: Orbit Climb. Parkour up the tower.</span>
+        <span><b>NOV 21</b>New: Loopsprout. Hum a tune and make music.</span>
+        <span><b>NOV 19</b>New game: Loose Thread. Play it in your browser.</span>
+        <span><b>NOV 19</b>GameShelf for Windows is out.</span>
+        <span><b>NOV 5</b>The site got a new look.</span>
+        <span><b>NOV 3</b>Velora is now called Nookara.</span>
+        <span><b>OCT 27</b>Pixel Wall is open. Come paint.</span>
+        <span><b>SOON</b>House Edge for Windows.</span>
       </div>
     </div>
+    <span class="clock" id="clock" aria-hidden="true">00:00</span>
   </div>
 
-  <div class="page" id="top">
+  <div class="page">
     <main>
-      <section class="hero reveal">
-        <h2>Welcome to hammi.ca!</h2>
-        <p>Small games for the PC and the browser, a music maker, a shelf for all your games, and a wall you can paint on.</p>
+      <section class="hero display">
+        <div class="row"><span class="lit">● live</span><span>hammi.ca</span><span class="count">out now<b>06</b></span></div>
+        <h2>Welcome to hammi.ca</h2>
+        <p>Small games for the PC and the browser, a music maker, a shelf for all your games, a chat app and a wall you can paint on.</p>
       </section>
 
-      <h2 class="section-title reveal" id="games">Games</h2>
+      <h2 class="legend section-title" id="games"><span>games</span><span class="ln"></span><span class="dim">07</span></h2>
       <ul class="games">
-        <li class="game pink reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">01</span><h3><a href="/orbit-climb/">orbit climb</a></h3><span class="ln"></span><span class="dim">browser · 3d</span></div>
           <div class="shot">
-            <a class="frame dark" href="/orbit-climb/" tabindex="-1" aria-hidden="true"><img src="img/orbit-climb.png" width="600" height="400" alt=""></a>
+            <a class="display" href="/orbit-climb/" tabindex="-1" aria-hidden="true"><img src="img/orbit-climb.png" width="600" height="400" alt=""></a>
           </div>
           <div>
-            <h3><a href="/orbit-climb/">Orbit Climb</a></h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag web">Browser</span><span class="tag">3D</span><span class="tag">Parkour</span><span class="tag">Controller</span><span class="tag">2 players</span></p>
+            <p class="name">Orbit Climb</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">3D</span><span class="tag">Parkour</span><span class="tag">Controller</span><span class="tag">2 players</span></p>
             <p class="desc">Climb through three worlds before the flood catches you: the Concrete Spire, Water World and Ember Peak. Wall-run, double jump and air dash from ledge to ledge, beat the boss at the top of every layer, and take down the final boss to conquer the world. Every jump, dash and boss has its own sound. Play alone or with a friend in split-screen co-op. Power cells you collect buy permanent upgrades in the Workshop.</p>
-            <div class="play"><a class="pbtn big" href="/orbit-climb/">Play now</a></div>
+            <div class="play"><a class="k orange" href="/orbit-climb/">Play now</a></div>
             <p class="fine">Plays in your browser on a computer, with keyboard and mouse or a game controller. Co-op needs a controller for player 2. Press M to turn the sound on or off.</p>
           </div>
         </li>
-        <li class="game reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">02</span><h3><a href="/loopsprout/">loopsprout</a></h3><span class="ln"></span><span class="dim">browser · music</span></div>
           <div class="shot">
-            <a class="frame dark" href="/loopsprout/" tabindex="-1" aria-hidden="true"><img src="img/loopsprout.png" width="600" height="400" alt=""></a>
+            <a class="display" href="/loopsprout/" tabindex="-1" aria-hidden="true"><img src="img/loopsprout.png" width="600" height="400" alt=""></a>
           </div>
           <div>
-            <h3><a href="/loopsprout/">Loopsprout</a></h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag web">Browser</span><span class="tag">Music</span></p>
+            <p class="name">Loopsprout</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Music</span></p>
             <p class="desc">Make a little loop of music. Stack layers of instruments and drums, hum a tune into your mic and it turns into notes, then hit play. Every note is locked to the key, so nothing sounds wrong.</p>
-            <div class="play"><a class="pbtn big" href="/loopsprout/">Make music</a></div>
+            <div class="play"><a class="k orange" href="/loopsprout/">Make music</a></div>
             <p class="fine">Plays in your browser. Humming needs a microphone; you can upload a recording instead. Your loop is saved in your browser.</p>
           </div>
         </li>
-        <li class="game pink reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">03</span><h3><a href="/loose-thread/">loose thread</a></h3><span class="ln"></span><span class="dim">browser · pixel art</span></div>
           <div class="shot">
-            <a class="frame dark" href="/loose-thread/" tabindex="-1" aria-hidden="true"><img src="img/loose-thread.png" width="600" height="400" alt="" style="image-rendering: pixelated"></a>
+            <a class="display" href="/loose-thread/" tabindex="-1" aria-hidden="true"><img src="img/loose-thread.png" width="600" height="400" alt="" style="image-rendering: pixelated"></a>
           </div>
           <div>
-            <h3><a href="/loose-thread/">Loose Thread</a></h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag web">Browser</span><span class="tag">Pixel art</span></p>
+            <p class="name">Loose Thread</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Pixel art</span></p>
             <p class="desc">You have a spool of thread and no weapons. Run circles around creatures and cross your own thread to pull the loop tight and tie them up. Light four lanterns in each room to open the door, and get through one long afternoon.</p>
-            <div class="play"><a class="pbtn big" href="/loose-thread/">Play now</a></div>
+            <div class="play"><a class="k orange" href="/loose-thread/">Play now</a></div>
             <p class="fine">Plays in your browser. Keyboard on a computer; touch controls on a phone.</p>
           </div>
         </li>
-        <li class="game reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">04</span><h3>house edge</h3><span class="ln"></span><span class="dim">windows · 3d</span></div>
           <div class="shot">
-            <span class="frame dark"><img src="img/house-edge.png" width="768" height="512" alt="The House Edge logo."></span>
+            <span class="display"><img src="img/house-edge.png" width="768" height="512" alt="The House Edge logo."></span>
           </div>
           <div>
-            <h3>House Edge</h3>
+            <p class="name">House Edge</p>
             <p class="meta"><span class="tag">Windows</span><span class="tag">3D</span><span class="tag">Online</span></p>
             <p class="desc">A small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Nookara account.</p>
-            <div class="play"><span class="pbtn off" aria-disabled="true">Download</span><span class="note">Coming soon!</span></div>
+            <div class="play"><span class="k grey off" aria-disabled="true">Download</span><span class="note"><span class="led on slow"></span>Coming soon</span></div>
           </div>
         </li>
-        <li class="game pink reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">05</span><h3><a href="https://wall.hammi.ca/">pixel wall</a></h3><span class="ln"></span><span class="dim">browser · multiplayer</span></div>
           <div class="shot">
-            <a class="frame" href="https://wall.hammi.ca/" tabindex="-1" aria-hidden="true"><canvas id="wall" width="48" height="32"></canvas></a>
+            <a class="display" href="https://wall.hammi.ca/" tabindex="-1" aria-hidden="true"><canvas id="wall" width="48" height="32"></canvas></a>
+            <div class="cap"><span>wall.hammi.ca</span><span>128 × 64</span></div>
           </div>
           <div>
-            <h3><a href="https://wall.hammi.ca/">Pixel Wall</a></h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag web">Browser</span><span class="tag">Multiplayer</span></p>
+            <p class="name">Pixel Wall</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Multiplayer</span></p>
             <p class="desc">One shared canvas that anyone can paint on. Every pixel costs Nookara credits, and you sign in with a Nookara account to buy them. Your pixels stay on the wall for everyone to see.</p>
-            <div class="play"><a class="pbtn big" href="https://wall.hammi.ca/">Open the wall</a></div>
+            <div class="play"><a class="k orange" href="https://wall.hammi.ca/">Open the wall</a></div>
           </div>
         </li>
-        <li class="game reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">06</span><h3>gameshelf</h3><span class="ln"></span><span class="dim">windows · launcher</span></div>
           <div class="shot">
-            <span class="frame dark"><img src="img/gameshelf.png" width="512" height="512" alt="The GameShelf app icon: a play button on a shelf of games."></span>
+            <span class="display"><img src="img/gameshelf.png" width="512" height="512" alt="The GameShelf app icon: a play button on a shelf of games."></span>
           </div>
           <div>
-            <h3>GameShelf</h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag">Windows</span><span class="tag">Launcher</span></p>
+            <p class="name">GameShelf</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Windows</span><span class="tag">Launcher</span></p>
             <p class="desc">All your games on one shelf, with big box art. Your Steam and Epic games show up by themselves, and when you add a folder of game files GameShelf works out which console each one is for and sets up an emulator to play it. No games are included; bring your own.</p>
-            <div class="play"><a class="pbtn big" href="https://github.com/Dipish3639/hammi-ca/releases/download/gameshelf-win-0.1.2/GameShelf-0.1.2-win-x64.zip">Download for Windows</a></div>
+            <div class="play"><a class="k orange" href="https://github.com/Dipish3639/hammi-ca/releases/download/gameshelf-win-0.1.2/GameShelf-0.1.2-win-x64.zip">Download for Windows</a></div>
             <p class="fine">Version 0.1.2, 64-bit Windows, 158 MB zip. Nothing to install: unzip it anywhere and run GameShelf.exe.</p>
           </div>
         </li>
-        <li class="game pink reveal">
+        <li class="game">
+          <div class="head legend"><span class="num">07</span><h3><a href="/chat/">hammi chat</a></h3><span class="ln"></span><span class="dim">browser · chat</span></div>
           <div class="shot">
-            <a class="frame dark" href="/chat/" tabindex="-1" aria-hidden="true"><img src="img/hammi-chat.png" width="600" height="400" alt=""></a>
+            <a class="display" href="/chat/" tabindex="-1" aria-hidden="true"><img src="img/hammi-chat.png" width="600" height="400" alt=""></a>
           </div>
           <div>
-            <h3><a href="/chat/">Hammi Chat</a></h3>
-            <p class="meta"><span class="tag new">New!</span><span class="tag web">Browser</span><span class="tag">Chat</span></p>
+            <p class="name">Hammi Chat</p>
+            <p class="meta"><span class="tag new">New</span><span class="tag">Browser</span><span class="tag">Chat</span></p>
             <p class="desc">A chat app for Ember servers, made here on hammi.ca. Sign in with your Nookara account to talk in your servers and send direct messages. Encrypted DMs, signed messages and custom emoji all work, and you can do almost everything from the keyboard.</p>
-            <div class="play"><a class="pbtn big" href="/chat/">Open Hammi Chat</a> <a class="pbtn" href="/chat/?demo">Try the demo</a></div>
+            <div class="play"><a class="k orange" href="/chat/">Open Hammi Chat</a><a class="k grey" href="/chat/?demo">Try the demo</a></div>
             <p class="fine">Runs in your browser on a computer or phone. Signing in is limited to testers while the app waits for Nookara to verify it; anyone can try the demo.</p>
           </div>
         </li>
@@ -619,39 +424,40 @@
     </main>
 
     <aside class="side">
-      <section class="widget reveal" id="about">
-        <h4>About</h4>
+      <section id="about">
+        <h4 class="legend"><span>about</span><span class="ln"></span></h4>
         <div class="in"><p>Home of a few small games. Six are out right now, and more are on the way.</p></div>
       </section>
 
-      <section class="widget reveal">
-        <h4>Games</h4>
+      <section>
+        <h4 class="legend"><span>games</span><span class="ln"></span><span class="dim">07</span></h4>
         <div class="in">
           <ul class="links">
-            <li><a href="/orbit-climb/">Orbit Climb</a></li>
-            <li><a href="/loopsprout/">Loopsprout</a></li>
-            <li><a href="/loose-thread/">Loose Thread</a></li>
-            <li><a href="#games">House Edge</a></li>
-            <li><a href="https://wall.hammi.ca/">Pixel Wall</a></li>
-            <li><a href="#games">GameShelf</a></li>
-            <li><a href="/chat/">Hammi Chat</a></li>
+            <li><a href="/orbit-climb/"><span class="led"></span>Orbit Climb</a></li>
+            <li><a href="/loopsprout/"><span class="led"></span>Loopsprout</a></li>
+            <li><a href="/loose-thread/"><span class="led"></span>Loose Thread</a></li>
+            <li><a href="#games"><span class="led"></span>House Edge</a></li>
+            <li><a href="https://wall.hammi.ca/"><span class="led"></span>Pixel Wall</a></li>
+            <li><a href="#games"><span class="led"></span>GameShelf</a></li>
+            <li><a href="/chat/"><span class="led"></span>Hammi Chat</a></li>
           </ul>
         </div>
       </section>
 
-      <section class="widget status reveal">
-        <h4>Server status</h4>
+      <section>
+        <h4 class="legend"><span>server status</span><span class="ln"></span></h4>
         <div class="in">
-          <div class="status-row"><span class="led" aria-hidden="true"></span>Pixel Wall: online</div>
-          <div class="status-row"><span class="led" aria-hidden="true"></span>GameShelf download: ready</div>
-          <div class="status-row"><span class="led wait" aria-hidden="true"></span>House Edge download: soon</div>
+          <div class="status-row"><span class="led on" aria-hidden="true"></span>Pixel Wall: online</div>
+          <div class="status-row"><span class="led on" aria-hidden="true"></span>GameShelf download: ready</div>
+          <div class="status-row"><span class="led on slow" aria-hidden="true"></span>House Edge download: soon</div>
         </div>
       </section>
 
-      <section class="widget newsw reveal" id="news">
-        <h4>What's new</h4>
+      <section id="news">
+        <h4 class="legend"><span>what's new</span><span class="ln"></span><span class="dim">13</span></h4>
         <div class="in">
           <ul class="news">
+            <li><time datetime="2026-11-26">Nov 26, 2026</time>hammi.ca has a new look, to match Hammi Chat. There is a settings key at the top for light and dark mode.</li>
             <li><time datetime="2026-11-26">Nov 26, 2026</time>New: Hammi Chat, a chat app for Ember servers. Sign in with Nookara, or try the demo. Find it under Games.</li>
             <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb has 2-player split-screen co-op. Player 2 uses a controller, you share the flood and the bosses, and if one of you goes down, you come back next to your partner after 5 seconds.</li>
             <li><time datetime="2026-11-22">Nov 22, 2026</time>Orbit Climb has sound now: effects for jumps, pickups and bosses, and a low hum for each world. Press M to mute.</li>
@@ -671,129 +477,85 @@
   </div>
 
   <footer class="footer">
-    <nav><a href="#top">Home</a> | <a href="#games">Games</a> | <a href="https://wall.hammi.ca/">Pixel Wall</a> | <a href="#about">About</a></nav>
-    <div>&copy; <span id="year">2026</span> hammi.ca. Best played with the lights off.</div>
-    <div class="badges" aria-hidden="true">
-      <span class="badge b1"><span>Web</span><span>2.0</span></span>
-      <span class="badge b2"><span>HTML</span><span>5</span></span>
-      <span class="badge b3"><span>CSS</span><span>3</span></span>
-      <span class="badge b4"><span>Made</span><span>by hand</span></span>
-    </div>
+    <nav><a href="#top">Home</a><a href="#games">Games</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="/chat/">Hammi Chat</a><a href="#about">About</a></nav>
+    <span>&copy; <span id="year">2026</span> hammi.ca</span>
+    <span class="end">made by hand · hm-1</span>
   </footer>
 </div>
 
 <script>
 (() => {
-  document.body.classList.remove('no-js');
-  document.getElementById('year').textContent = new Date().getFullYear();
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = id => document.getElementById(id);
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('year').textContent = new Date().getFullYear();
 
-  /* ---------- pixel stars twinkling and drifting down ---------- */
-  const cvs = $('stars');
-  const ctx = cvs.getContext('2d');
-  const COLS = ['#ffffff', '#ffffff', '#2ee6ff', '#ff2e88', '#9b5cff'];
-  let W = 0, H = 0, stars = [], last = 0, raf = 0;
-  function layout() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = innerWidth; H = innerHeight;
-    cvs.width = W * dpr; cvs.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const n = Math.round(Math.min(150, W * H / 9000));
-    stars = Array.from({ length: n }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      z: 1 + (Math.random() * 3 | 0),
-      c: COLS[Math.random() * COLS.length | 0],
-      t: Math.random() * 6.28,
-    }));
-    draw(0);
+  /* ---------- ticker: repeat the items once so the loop is seamless ---------- */
+  const run = $('run');
+  [...run.children].forEach(n => { const c = n.cloneNode(true); c.setAttribute('aria-hidden', 'true'); run.appendChild(c); });
+
+  /* ---------- clock on the news display ---------- */
+  const tick = () => { const d = new Date(), t = d.toTimeString(); $('clock').innerHTML = t.slice(0, 2) + (d.getSeconds() % 2 ? '<s>:</s>' : ':') + t.slice(3, 5); };
+  tick(); setInterval(tick, 1000);
+
+  /* ---------- settings: mode, accent, news scroll ---------- */
+  const get = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+  const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+  const S = { theme: get('hammi-theme', 'auto'), accent: get('hammi-accent', 'orange'), scroll: get('hammi-ticker', 'on') };
+  function apply() {
+    if (S.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = S.theme;
+    root.classList.toggle('accent-blue', S.accent === 'blue');
+    document.body.classList.toggle('still', S.scroll === 'off');
+    document.querySelectorAll('[data-set]').forEach(g => g.querySelectorAll('.sk').forEach(el =>
+      el.querySelector('.led').classList.toggle('on', el.querySelector('button').dataset.v === S[g.dataset.set])));
+    const on = S.scroll !== 'off' && !reduce;
+    $('motion').classList.toggle('on', on); $('motion-led').classList.toggle('on', on);
+    $('motion').querySelector('.b').textContent = on ? 'scroll' : 'still';
+    $('motion').setAttribute('aria-pressed', on);
   }
-  function draw(dt) {
-    ctx.clearRect(0, 0, W, H);
-    for (const s of stars) {
-      s.y += s.z * 10 * dt; s.t += dt * 3;
-      if (s.y > H) { s.y = -4; s.x = Math.random() * W; }
-      ctx.globalAlpha = Math.max(0, 0.2 + 0.15 * s.z + 0.2 * Math.sin(s.t));
-      ctx.fillStyle = s.c;
-      const size = s.z === 3 ? 3 : 2;
-      ctx.fillRect(Math.round(s.x), Math.round(s.y), size, size);
-      if (s.z === 3 && Math.sin(s.t) > 0.9) { // a little + sparkle
-        ctx.fillRect(Math.round(s.x) - 3, Math.round(s.y) + 1, 9, 1);
-        ctx.fillRect(Math.round(s.x) + 1, Math.round(s.y) - 3, 1, 9);
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-  function frame(now) {
-    const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
-    last = now; draw(dt); paintWall(now);
-    raf = requestAnimationFrame(frame);
+  apply();
+  $('sheet').addEventListener('click', e => {
+    const b = e.target.closest('button'), g = b && b.closest('[data-set]'); if (!g) return;
+    S[g.dataset.set] = b.dataset.v;
+    put(g.dataset.set === 'theme' ? 'hammi-theme' : 'hammi-accent', b.dataset.v === 'auto' ? null : b.dataset.v);
+    apply(); drawWallBase();
+  });
+  $('motion').addEventListener('click', () => { S.scroll = S.scroll === 'off' ? 'on' : 'off'; put('hammi-ticker', S.scroll); apply(); });
+  const toggleSheet = open => { $('sheet').hidden = !open; $('settings').classList.toggle('on', open); $('set-led').classList.toggle('on', open); $('settings').setAttribute('aria-expanded', open); };
+  $('settings').addEventListener('click', () => toggleSheet($('sheet').hidden));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) toggleSheet(false); });
+  document.addEventListener('click', e => { if (!$('sheet').hidden && !e.target.closest('#sheet, #settings')) toggleSheet(false); });
+
+  /* ---------- nav lights follow the section you are reading ---------- */
+  const navItems = [...document.querySelectorAll('#nav a[href^="#"]')];
+  const setNav = a => navItems.forEach(x => { const on = x === a; x.className = 'k ' + (on ? 'orange' : x.getAttribute('href') === '#news' ? 'grey' : 'black'); x.previousElementSibling.classList.toggle('on', on); });
+  navItems.forEach(a => a.addEventListener('click', () => setNav(a)));
+  if ('IntersectionObserver' in window) {
+    const targets = navItems.map(a => [a, a.getAttribute('href') === '#top' ? document.querySelector('.hero') : document.querySelector(a.getAttribute('href'))]);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { const t = targets.find(x => x[1] === e.target); if (t) setNav(t[0]); } }), { rootMargin: '-40% 0px -55% 0px' });
+    targets.forEach(t => t[1] && io.observe(t[1]));
   }
 
   /* ---------- tiny Pixel Wall that paints itself ---------- */
   const wx = $('wall').getContext('2d');
-  const PAL = ['#ff2e88', '#ff5fb0', '#ffa8d6', '#2ee6ff', '#1c9bd6', '#9b5cff', '#6a3df0', '#d64dff', '#ffffff', '#c8f7ff'];
+  const PAL = ['#ff5a1f', '#ff8a5c', '#3c9eff', '#7cc0ff', '#e9e9e6', '#bdbdb9', '#6f6f6c', '#ffc23c', '#2fbf71'];
   const HEART = ['01100110', '11111111', '11111111', '01111110', '00111100', '00011000'];
-  wx.fillStyle = '#000'; wx.fillRect(0, 0, 48, 32);
-  HEART.forEach((row, y) => [...row].forEach((c, x) => { if (c === '1') { wx.fillStyle = '#ff2e88'; wx.fillRect(20 + x, 11 + y, 1, 1); } }));
-  for (let i = 0; i < 120; i++) { wx.fillStyle = PAL[i % PAL.length]; wx.fillRect(Math.random() * 48 | 0, Math.random() * 32 | 0, 1, 1); }
-  let nextPaint = 0, brush = { x: 6, y: 6, c: PAL[2] };
-  function paintWall(now) {
-    if (now < nextPaint) return;
-    nextPaint = now + 70;
+  function drawWallBase() {
+    wx.fillStyle = '#0b0b0c'; wx.fillRect(0, 0, 48, 32);
+    for (let i = 0; i < 110; i++) { wx.fillStyle = PAL[i % PAL.length]; wx.fillRect(Math.random() * 48 | 0, Math.random() * 32 | 0, 1, 1); }
+    const c = getComputedStyle(root).getPropertyValue('--orange').trim() || '#ff5a1f';
+    HEART.forEach((row, y) => [...row].forEach((v, x) => { if (v === '1') { wx.fillStyle = c; wx.fillRect(20 + x, 13 + y, 1, 1); } }));
+  }
+  drawWallBase();
+  let brush = { x: 6, y: 6, c: PAL[2] };
+  function paint() {
     if (Math.random() < 0.08) brush = { x: Math.random() * 48 | 0, y: Math.random() * 32 | 0, c: PAL[Math.random() * PAL.length | 0] };
     brush.x = (brush.x + (Math.random() * 3 | 0) - 1 + 48) % 48;
     brush.y = (brush.y + (Math.random() * 3 | 0) - 1 + 32) % 32;
-    const inHeart = brush.x >= 20 && brush.x < 28 && brush.y >= 11 && brush.y < 17;
+    const inHeart = brush.x >= 20 && brush.x < 28 && brush.y >= 13 && brush.y < 19;
     if (!inHeart) { wx.fillStyle = brush.c; wx.fillRect(brush.x, brush.y, 1, 1); }
   }
-
-  addEventListener('resize', layout);
-  layout();
-  if (!reduce) raf = requestAnimationFrame(frame);
-  document.addEventListener('visibilitychange', () => {
-    cancelAnimationFrame(raf); last = 0;
-    if (!document.hidden && !reduce) raf = requestAnimationFrame(frame);
-  });
-
-  /* ---------- sliding nav cursor ---------- */
-  const nav = $('nav');
-  const lamp = nav.querySelector('.lamp');
-  const home = nav.querySelector('a.on');
-  function moveTo(a) {
-    lamp.style.left = a.offsetLeft + 'px'; lamp.style.width = a.offsetWidth + 'px';
-    lamp.style.top = a.offsetTop + 'px'; lamp.style.height = a.offsetHeight + 'px';
-  }
-  for (const a of nav.querySelectorAll('a')) {
-    a.addEventListener('mouseenter', () => moveTo(a));
-    a.addEventListener('focus', () => moveTo(a));
-  }
-  nav.addEventListener('mouseleave', () => moveTo(home));
-  addEventListener('resize', () => moveTo(home));
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveTo(home));
-  moveTo(home);
-
-  /* ---------- typing slogan ---------- */
-  const slogans = ['games & stuff, made after dark', 'paint a pixel, leave your mark', 'more games coming soon'];
-  const sEl = $('slogan');
-  if (!reduce) {
-    let si = 0, ci = slogans[0].length, del = true;
-    setTimeout(function type() {
-      if (del) { ci--; if (ci <= 0) { del = false; si = (si + 1) % slogans.length; } }
-      else { ci++; if (ci >= slogans[si].length) { del = true; sEl.textContent = slogans[si]; return setTimeout(type, 3200); } }
-      sEl.textContent = slogans[si].slice(0, Math.max(ci, 0)) || ' ';
-      setTimeout(type, del ? 28 : 55);
-    }, 3200);
-  }
-
-  /* ---------- reveal on scroll ---------- */
-  const items = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window && !reduce) {
-    const io = new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    }), { threshold: 0.12 });
-    items.forEach((el, i) => { el.style.transitionDelay = (i % 4) * 80 + 'ms'; io.observe(el); });
-  } else items.forEach(el => el.classList.add('in'));
+  if (!reduce) setInterval(() => { if (!document.hidden) paint(); }, 90);
 })();
 </script>
 </body>
