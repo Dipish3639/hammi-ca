@@ -328,6 +328,7 @@ function onHomeFrame(m) {
     case 'e2ee_link_request': sys('A device or app is asking to read your DMs. Approve it in the Ember app (Settings > Privacy) only if you started it.'); return;
     case 'auth_error': case 'auth_failed':
       if (['invalid_token', 'token_expired', 'banned'].includes(m.error)) signedOut('Your Nookara sign-in ended. Sign in again.');
+      else if (m.error === 'maintenance') { S.home.retry = 4; } // (closes; tried again with the slow backoff)
       else { console.warn('Hammi Chat: Nookara socket said', m.error); sys('Live DMs are unavailable: ' + (m.message || m.error || 'Nookara refused the connection')); S.home.noRetry = true; }
       return;
     case 'im_received': case 'im_sent': { (async () => {
@@ -1104,14 +1105,24 @@ async function start() {
       if (a instanceof Error && a.status === 401) { signedOut(`Your Nookara sign-in ended (${e.message}). Sign in again.`); return; }
       if (!(a instanceof Error)) S.me = a.username || a.account?.username || a.user?.username || S.me;
     }
+    // Nookara is down for maintenance (or unreachable): say it once and try the whole start again in a bit
+    if (e.message === 'maintenance' || e.status === 503 || e.status === 0) {
+      if (!S.waitingNookara) sys(e.message === 'maintenance' ? 'Nookara is down for maintenance right now. Hammi Chat will connect by itself when it is back.' : 'Nookara is not answering. Hammi Chat will keep trying.', 'err');
+      S.waitingNookara = true; render();
+      setTimeout(start, 30000);
+      return;
+    }
     sys('Nookara did not answer the session check (' + e.message + '). Some things may not work.', 'err');
   }
+  if (S.waitingNookara) { S.waitingNookara = false; sys('Nookara is back. Connecting...'); }
+  if (S.started) return; // (a retry after maintenance: the rest already ran... only once)
+  S.started = true;
   if (!S.me) { const a = await nk('/account/me').catch(() => null); S.me = a?.username || a?.account?.username || a?.user?.username || S.me; }
   store.set(LS.user, S.me);
   HC.use(nk);
   HC.onChange(st => { renderStatus(); if (st === 'locked' || st === 'none') { if (S.view.kind === 'dm') e2eeHint(); } });
   HC.init().then(st => { if (st === 'ready') afterUnlock(); });
-  HC.setupSigning(S.session).then(st => { if (st === 'no_scope') sys('Message signing is off: sign out and back in to give Hammi Chat the new "Sign Messages" permission.'); else if (st === 'unsupported') sys('This browser cannot sign messages (no Ed25519). Messages go out unsigned.'); });
+  HC.setupSigning(S.session).then(st => { if (st === 'no_scope' && S.session) sys('Message signing is off: sign out and back in to give Hammi Chat the new "Sign Messages" permission.'); else if (st === 'unsupported') sys('This browser cannot sign messages (no Ed25519). Messages go out unsigned.'); });
   render();
   openHome();
   loadDMs();
