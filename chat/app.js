@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.1.0' };
+const CLIENT = { name: 'Hammi Chat', version: '0.1.1' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -66,7 +66,9 @@ async function nk(path, opts = {}) {
   HC?.noteClock(res.headers.get('date'));
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (res.status === 401 && S.token && ['unauthorized', 'invalid_token', 'token_expired'].includes(data.error)) signedOut('Your Nookara sign-in ended. Sign in again.');
+    // only the sign-in check itself ends the session: a 401 from any other route (a permission this app doesn't have,
+    // a route apps can't use) is just that request failing
+    if (res.status === 401 || res.status === 403) console.warn('Hammi Chat: Nookara refused', path, res.status, data.error);
     throw Object.assign(new Error(data.error || 'request_failed'), { status: res.status, data });
   }
   return data;
@@ -298,7 +300,7 @@ function openHome() {
   ws.onclose = () => {
     if (S.home.ws !== ws) return;
     S.home.ws = null; S.home.status = 'closed'; renderStatus();
-    if (S.token) setTimeout(openHome, backoff(S.home.retry++));
+    if (S.token && !S.home.noRetry) setTimeout(openHome, backoff(S.home.retry++));
   };
 }
 // a raw /im message -> what the log shows. Encrypted ones are opened with this device's keys (e2ee.js)
@@ -324,7 +326,10 @@ function onHomeFrame(m) {
     case 'presence_update': if (m.username) { S.presence[m.username] = m.presence; renderRight(); renderLeft(); } return;
     case 'e2ee_keys_changed': if (m.username) HC?.forgetBundle(m.username); return;
     case 'e2ee_link_request': sys('A device or app is asking to read your DMs. Approve it in the Ember app (Settings > Privacy) only if you started it.'); return;
-    case 'auth_error': case 'auth_failed': signedOut('Your Nookara sign-in ended. Sign in again.'); return;
+    case 'auth_error': case 'auth_failed':
+      if (['invalid_token', 'token_expired', 'banned'].includes(m.error)) signedOut('Your Nookara sign-in ended. Sign in again.');
+      else { console.warn('Hammi Chat: Nookara socket said', m.error); sys('Live DMs are unavailable: ' + (m.message || m.error || 'Nookara refused the connection')); S.home.noRetry = true; }
+      return;
     case 'im_received': case 'im_sent': { (async () => {
       const msg = m.message; if (!msg) return;
       const other = m.type === 'im_sent' || msg.from === S.me ? msg.to : msg.from;
@@ -1091,7 +1096,16 @@ async function start() {
     const d = await nk('/bonfire/session');
     S.session = d;
     S.me = d.username || d.user?.username || d.account?.username || S.me;
-  } catch (e) { if (!S.token) return; }
+  } catch (e) {
+    if (!S.token) return;
+    // the token is only treated as dead when Nookara rejects it everywhere, not when one route says no
+    if (e.status === 401) {
+      const a = await nk('/account/me').catch(x => x);
+      if (a instanceof Error && a.status === 401) { signedOut(`Your Nookara sign-in ended (${e.message}). Sign in again.`); return; }
+      if (!(a instanceof Error)) S.me = a.username || a.account?.username || a.user?.username || S.me;
+    }
+    sys('Nookara did not answer the session check (' + e.message + '). Some things may not work.', 'err');
+  }
   if (!S.me) { const a = await nk('/account/me').catch(() => null); S.me = a?.username || a?.account?.username || a?.user?.username || S.me; }
   store.set(LS.user, S.me);
   HC.use(nk);
