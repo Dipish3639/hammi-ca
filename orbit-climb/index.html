@@ -47,6 +47,16 @@ body.split .h-hp{top:44px}
 #go{font-size:22px;margin-top:10px;color:#ff4a2a}
 
 .pfocus{outline:3px solid #ffd040!important;outline-offset:2px}
+#skin{margin-top:18px;text-align:left}
+#skTabs{display:flex;gap:8px;margin-bottom:8px}#skTabs .btn{flex:none;min-width:0;font-size:14px;padding:6px 14px}
+#skBody{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+#skView{width:200px;height:240px;flex:none;background:#1a1917;border:1px solid #55524c}
+#skOpts{flex:1 1 220px;min-width:0}
+.skL{font-size:12px;letter-spacing:3px;color:#a8a49c;margin:8px 0 5px}.skL b{color:#d8d4cc;font-weight:normal;margin-left:6px}
+.skRow{display:flex;gap:6px;flex-wrap:wrap}
+.btn.sw{flex:none;min-width:0;width:30px;height:30px;padding:0;border:2px solid #3a3936}
+.btn.sw:hover{border-color:#a8a49c;background:inherit}.btn.sw.sel{border-color:#fff;box-shadow:inset 0 0 0 2px #1a1917}
+.btn.sm{flex:none;min-width:0;font-size:13px;padding:5px 10px}
 #resume{display:none;font-size:26px;color:#ffd040;margin-top:30px}
 </style></head><body>
 <div id="vig"></div><div id="divider"></div>
@@ -72,7 +82,11 @@ body.split .h-hp{top:44px}
   <p><b style="color:#ff6a4a">Each layer ends in a boss.</b> Parkour onto the glowing cores to overload it. <b>Beat the 5th boss to conquer the world.</b></p>
  </div>
  <div id="right"><h3>WORKSHOP · PERMANENT UPGRADES</h3><div id="bank"></div><div id="perks"></div>
-  <p style="opacity:.7;margin-top:8px">Power cells you collect are banked when a run ends. Spend them here any time.</p></div>
+  <p style="opacity:.7;margin-top:8px">Power cells you collect are banked when a run ends. Spend them here any time.</p>
+  <div id="skin"><h3 style="text-align:center">LOCKER · YOUR SUIT</h3>
+   <div id="skTabs"></div>
+   <div id="skBody"><canvas id="skView" width="200" height="240"></canvas><div id="skOpts"></div></div>
+   <p style="opacity:.7;margin-top:8px;text-align:center">You see your gloves in first person. Your partner sees the whole suit in split screen.</p></div></div>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -542,16 +556,89 @@ function hazardsMove(dt){
 }
 // ================= PLAYERS (state swapping for split screen) =================
 let down=false,downT=0,pad={mx:0,my:0,prev:[]};
-const PCOL=[0x40e0ff,0xffa030];
-function mkAvatar(col){const g=new THREE.Group(),suit=cement(0x5a5856,.5,.5),gl=glow(col,2.5);
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.3,.26,1,10),suit);body.position.y=.95;
-  const head=new THREE.Mesh(new THREE.BoxGeometry(.38,.38,.38),suit);head.position.y=1.65;
-  const visor=new THREE.Mesh(new THREE.BoxGeometry(.32,.1,.05),gl);visor.position.set(0,1.68,-.2);
-  const legs=[-1,1].map(k=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,.16),suit);l.position.set(k*.12,.25,0);return l;});
+// ---------- skins (saved per player in localStorage.ocSkin) ----------
+const SUITS=[['GRAPHITE',0x5a5856],['BONE',0xc8c2b4],['SIGNAL',0xe4e2dc],['RUST',0x8a4a2e],['OLIVE',0x5c6242],['NAVY',0x2e3a52],['OXBLOOD',0x5a2226],['CARBON',0x262626]];
+const ACCENTS=[['CYAN',0x40e0ff],['AMBER',0xffa030],['RED',0xff3a1a],['LIME',0xb0ff30],['VIOLET',0xb06aff],['GOLD',0xffd040],['WHITE',0xf2f2ee],['ROSE',0xff4a8a]];
+const FINISHES=['CONCRETE','MATTE','METAL','CARBON','HAZARD'],HELMETS=['BOX','DOME','CREST'];
+const SKIN0=[{suit:0,acc:0,fin:0,helm:0},{suit:0,acc:1,fin:0,helm:0}];
+let SKINS=SKIN0.map(o=>Object.assign({},o));
+try{const v=JSON.parse(localStorage.ocSkin||'null');if(Array.isArray(v))v.forEach((o,i)=>{if(i<2&&o)SKINS[i]=Object.assign(SKINS[i],o);});}catch(e){}
+SKINS.forEach(k=>{k.suit=Math.max(0,Math.min(SUITS.length-1,k.suit|0));k.acc=Math.max(0,Math.min(ACCENTS.length-1,k.acc|0));k.fin=Math.max(0,Math.min(FINISHES.length-1,k.fin|0));k.helm=Math.max(0,Math.min(HELMETS.length-1,k.helm|0));});
+const saveSkins=()=>{try{localStorage.ocSkin=JSON.stringify(SKINS)}catch(e){}};
+const accOf=i=>ACCENTS[SKINS[i].acc][1],hex6=c=>'#'+c.toString(16).padStart(6,'0');
+const finTex={};
+function patTex(kind){if(finTex[kind])return finTex[kind];const S=128,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');
+  if(kind==='CARBON'){g.fillStyle='#8a8a8a';g.fillRect(0,0,S,S);for(let y=0;y<S;y+=8)for(let x=0;x<S;x+=8){const o=((x+y)/8)%2;g.fillStyle=o?'#d0d0d0':'#5a5a5a';g.fillRect(x,y+(o?0:2),8,4);g.fillStyle=o?'#6a6a6a':'#b8b8b8';g.fillRect(x+(o?2:0),y,4,8);}}
+  else{g.fillStyle='#ffffff';g.fillRect(0,0,S,S);g.fillStyle='#262626';for(let k=-S;k<S*2;k+=32){g.beginPath();g.moveTo(k,0);g.lineTo(k+16,0);g.lineTo(k+16-S,S);g.lineTo(k-S,S);g.fill();}}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return finTex[kind]=t;}
+function suitMat(sk,shade=1){const c=new THREE.Color(SUITS[sk.suit][1]).multiplyScalar(shade),f=FINISHES[sk.fin];
+  if(f==='CONCRETE')return cement(c,.5,.5);
+  if(f==='MATTE')return std(c,{roughness:.95,metalness:0});
+  if(f==='METAL')return std(c,{roughness:.32,metalness:.75,emissive:c.clone().multiplyScalar(.08)});
+  return std(c,{map:patTex(f),roughness:f==='CARBON'?.4:.8,metalness:f==='CARBON'?.35:.05});}
+// full suit: seen by your partner in split screen and in the locker preview
+function buildSuit(sk,glowI=2.5){const g=new THREE.Group(),suit=suitMat(sk),dark=suitMat(sk,.55),gl=glow(ACCENTS[sk.acc][1],glowI);
+  const add=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;};
+  add(new THREE.CylinderGeometry(.3,.26,1,12),suit,0,.95,0);
+  add(new THREE.BoxGeometry(.5,.08,.34),dark,0,1.4,0);
+  add(new THREE.BoxGeometry(.26,.03,.02),gl,0,1.2,-.3);
+  [-1,1].forEach(k=>{add(new THREE.BoxGeometry(.16,.5,.16),dark,k*.12,.25,0);
+    const a=add(new THREE.BoxGeometry(.12,.6,.12),suit,k*.38,1.08,0);a.rotation.z=k*.12;
+    add(new THREE.BoxGeometry(.13,.03,.13),gl,k*.4,.8,0);});
+  const H=HELMETS[sk.helm];
+  if(H==='DOME'){add(new THREE.SphereGeometry(.22,16,12),suit,0,1.66,0);add(new THREE.BoxGeometry(.36,.09,.06),gl,0,1.66,-.2);}
+  else{add(new THREE.BoxGeometry(.38,.38,.38),suit,0,1.65,0);add(new THREE.BoxGeometry(.32,.1,.05),gl,0,1.68,-.2);
+    if(H==='CREST')add(new THREE.BoxGeometry(.05,.14,.42),dark,0,1.9,.02);}
+  g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
+function mkAvatar(i){const g=buildSuit(SKINS[i]),gl=glow(accOf(i),2.5);
   const tag=new THREE.Mesh(new THREE.OctahedronGeometry(.18),gl);tag.position.y=2.25;
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.4,.03,4,20),gl);ring.rotation.x=Math.PI/2;ring.position.y=.03;
-  g.add(body,head,visor,...legs,tag,ring);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});g.visible=false;scene.add(g);return g;}
-const avatars=[mkAvatar(PCOL[0]),mkAvatar(PCOL[1])];
+  g.add(tag,ring);g.visible=false;scene.add(g);return g;}
+// first-person gloves, attached to each player's camera
+function mkHands(i){const sk=SKINS[i],g=new THREE.Group(),suit=suitMat(sk),dark=suitMat(sk,.55),gl=glow(accOf(i),.45);
+  [-1,1].forEach(k=>{const a=new THREE.Group();a.position.set(k*.3,-.36,-.62);a.rotation.set(.22,-k*.12,k*.08);
+    const sleeve=new THREE.Mesh(new THREE.BoxGeometry(.075,.075,.3),suit);sleeve.position.z=.14;
+    const cuff=new THREE.Mesh(new THREE.BoxGeometry(.082,.082,.018),gl);cuff.position.z=-.015;
+    const glove=new THREE.Mesh(new THREE.BoxGeometry(.07,.06,.1),dark);glove.position.z=-.075;
+    const thumb=new THREE.Mesh(new THREE.BoxGeometry(.022,.022,.05),dark);thumb.position.set(-k*.042,.01,-.07);
+    a.add(sleeve,cuff,glove,thumb);a.userData.k=k;g.add(a);});
+  g.traverse(m=>{if(m.isMesh){m.renderOrder=10;}});g.visible=false;return g;}
+let avatars=[mkAvatar(0),mkAvatar(1)];
+cams.forEach((c,i)=>{scene.add(c);c.hands=mkHands(i);c.add(c.hands);});
+function applySkins(){
+  avatars.forEach(kill);avatars=[mkAvatar(0),mkAvatar(1)];
+  cams.forEach((c,i)=>{kill(c.hands);c.hands=mkHands(i);c.add(c.hands);});
+  players.forEach(P=>P.avatar=avatars[P.i]);paintTags();drawSkinUI();}
+function paintTags(){hA('tagP').forEach((e,i)=>{e.textContent='P'+(i+1);e.style.color=hex6(accOf(i));});
+  [['ch',0],['ch_2',1]].forEach(([id,i])=>{const e=$(id);if(e)e.style.background=hex6(ACCENTS[SKINS[i].acc][1]);});}
+function animHands(dt){const H=cam.hands;if(!H)return;
+  const sw=ground?Math.sin(bob*.5)*.014:0,bb=ground?-Math.abs(Math.cos(bob*.5))*.012:0,air=Math.max(-.05,Math.min(.05,-vy*.004));
+  H.position.x+=(sw-H.position.x)*Math.min(1,dt*10);H.position.y+=(bb+air-land*.5-H.position.y)*Math.min(1,dt*10);H.position.z=fovK*.09;
+  const side=wall?Math.sign((-Math.sin(yaw))*wall.z-(-Math.cos(yaw))*wall.x)||0:0;
+  H.children.forEach(a=>{const up=side&&a.userData.k===-side?.12:0;a.position.y+=(-.36+up-a.position.y)*Math.min(1,dt*10);});}
+// ---------- locker preview ----------
+let skEdit=0;const skR={};
+function initSkinView(){try{const cv=$('skView');skR.ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});skR.ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  skR.scene=new THREE.Scene();skR.cam=new THREE.PerspectiveCamera(32,200/240,.1,50);skR.cam.position.set(0,1.35,4.2);skR.cam.lookAt(0,1.05,0);
+  skR.scene.add(new THREE.HemisphereLight(0xffffff,0x3a3836,.85));const d=new THREE.DirectionalLight(0xffffff,.9);d.position.set(2,4,3);skR.scene.add(d);
+  const fl=new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,.04,32),std(0x2a2926,{roughness:1}));fl.position.y=-.02;skR.scene.add(fl);
+  skR.ring=new THREE.Mesh(new THREE.TorusGeometry(.62,.012,4,48),glow(0xffffff,1));skR.ring.rotation.x=Math.PI/2;skR.ring.position.y=.01;skR.scene.add(skR.ring);
+  skR.rot=-.5;}catch(e){skR.ren=null;}}
+function setPreview(){if(!skR.scene)return;if(skR.fig)kill(skR.fig);skR.fig=buildSuit(SKINS[skEdit],1.4);skR.scene.add(skR.fig);
+  const a=accOf(skEdit);skR.ring.material.color.setHex(a);skR.ring.material.emissive.setHex(a);}
+function renderSkinView(dt){if(!skR.ren||menu.style.display==='none'||$('cols').style.display==='none')return;
+  skR.rot+=dt*.5;if(skR.fig)skR.fig.rotation.y=skR.rot;skR.ren.render(skR.scene,skR.cam);}
+function drawSkinUI(){if(!split&&skEdit)skEdit=0;const sk=SKINS[skEdit];
+  $('skTabs').innerHTML=split?[0,1].map(i=>`<button class="btn sm ${i===skEdit?'sel':''}" data-id="sk-p${i}" data-k="p" data-v="${i}">P${i+1}</button>`).join(''):'';
+  const sw=(list,key)=>list.map(([n,c],i)=>`<button class="btn sw ${sk[key]===i?'sel':''}" title="${n}" data-id="sk-${key}${i}" data-k="${key}" data-v="${i}" style="background:${hex6(c)}"></button>`).join('');
+  const tx=(list,key)=>list.map((n,i)=>`<button class="btn sm ${sk[key]===i?'sel':''}" data-id="sk-${key}${i}" data-k="${key}" data-v="${i}">${n}</button>`).join('');
+  $('skOpts').innerHTML=`<div class="skL">SUIT<b>${SUITS[sk.suit][0]}</b></div><div class="skRow">${sw(SUITS,'suit')}</div>
+    <div class="skL">ACCENT<b>${ACCENTS[sk.acc][0]}</b></div><div class="skRow">${sw(ACCENTS,'acc')}</div>
+    <div class="skL">FINISH</div><div class="skRow">${tx(FINISHES,'fin')}</div>
+    <div class="skL">HELMET</div><div class="skRow">${tx(HELMETS,'helm')}</div>`;
+  document.querySelectorAll('#skin .btn').forEach(b=>b.onclick=e=>{e.stopPropagation();const k=b.dataset.k,v=+b.dataset.v;
+    if(k==='p'){skEdit=v;drawSkinUI();setPreview();return;}
+    SKINS[skEdit][k]=v;saveSkins();applySkins();setPreview();});}
 const startU=()=>{const u={};['jump','speed','air','dashes','shield'].forEach(id=>{if(pl(id))u[id]=pl(id);});return u;};
 function mkPlayer(i){return {i,sfx:i?'_2':'',px:8-i*1.2,py:0,pz:i*1.6,vx:0,vy:0,vz:0,dx:0,dz:0,yaw:Math.PI,pitch:.15,ground:null,coyote:0,jumps:0,wall:null,wallCD:0,wallT:0,wallLeft:1,dashN:1,invuln:0,
   hp:3,hpMax:3,U:startU(),bob:0,fovK:0,land:0,lastSafe:plats[0],cam:cams[i],pad:{mx:0,my:0,prev:[]},down:false,downT:0,kb:i===0,padIdx:i,avatar:avatars[i]};}
@@ -643,10 +730,10 @@ function selectWorld(id){
   cam.position.set(px,py+EYE,pz);cam.rotation.set(pitch,yaw,0);
 }
 function drawPCount(){document.querySelectorAll('#pcount .btn').forEach(b=>{b.classList.toggle('sel',(b.dataset.p==='2')===split);
-  b.onclick=e=>{e.stopPropagation();split=b.dataset.p==='2';try{localStorage.ocSplit=split?'1':'0'}catch(_){}drawPCount();};});}
+  b.onclick=e=>{e.stopPropagation();split=b.dataset.p==='2';try{localStorage.ocSplit=split?'1':'0'}catch(_){}drawPCount();if(!split&&skEdit){skEdit=0;setPreview();}drawSkinUI();};});}
 function showMain(title,info){drawPCount();
   menu.querySelector('h1').textContent=title||'ORBIT CLIMB';$('cols').style.display='';$('resume').style.display='none';
-  drawShop();drawWorlds();if(info)$('best').textContent=info;else showBests();menu.style.display='flex';}
+  drawShop();drawSkinUI();drawWorlds();if(info)$('best').textContent=info;else showBests();menu.style.display='flex';}
 function reset(){
   clearBossStuff();debris.forEach(d=>kill(d.m));debris=[];
   plats.forEach(p=>kill(p.mesh));orbs.forEach(o=>kill(o.m));plats=[];orbs=[];obst=[];
@@ -655,7 +742,7 @@ function reset(){
   players=[];for(let i=0;i<(split?2:1);i++)players.push(mkPlayer(i));CUR=null;loadP(players[0]);
   avatars.forEach(a=>a.visible=false);assignPads();players.forEach(P=>withP(P,drawUps));
   alive=true;flood=-10-8*pl('head');t=0;maxH=0;orbN=0;runCells=0;zoneSeen=0;hA('goo').forEach(e=>e.style.display=mode==='zen'?'none':'');
-  hA('tagP').forEach((e,i)=>{e.textContent='P'+(i+1);e.style.color='#'+PCOL[i].toString(16).padStart(6,'0');});
+  paintTags();
 }
 function flash(s){const m=h('msg');if(!m)return;m.textContent=s;m.style.opacity=1;clearTimeout(m._t);m._t=setTimeout(()=>m.style.opacity=0,900);}
 function announce(i){sfx('zone');banner('LAYER '+(i+1)+' / '+Z.length,Z[i].name,Z[i].ui);}
@@ -702,7 +789,7 @@ function assignPads(){const gp=getPads(),n=gp.length;
   players.forEach(P=>{const g=gp[P.padIdx];P.pad.prev=g?g.buttons.map(x=>x.pressed):[];});}
 addEventListener('gamepadconnected',()=>{assignPads();if(players[0])withP(players[0],()=>flash('🎮 CONTROLLER CONNECTED'));});
 function menuItems(){if(menu.style.display==='none')return [];if($('cols').style.display==='none')return [];
-  return [...menu.querySelectorAll('#worlds .btn,#pcount .btn,#modes .btn,.perk')];}
+  return [...menu.querySelectorAll('#worlds .btn,#pcount .btn,#modes .btn,.perk,#skin .btn')];}
 function setFocus(items,i){items.forEach(el=>el.classList.remove('pfocus'));if(!items.length)return;nav.focus=Math.max(0,Math.min(items.length-1,i));const el=items[nav.focus];el.classList.add('pfocus');el.scrollIntoView({block:'nearest'});}
 function navMove(items,dxn,dyn){
   const cur=items[nav.focus];if(!cur)return setFocus(items,0);
@@ -792,7 +879,7 @@ function updatePlayer(dt){
   const roll=wall?(f.x*wall.z-f.z*wall.x)*.25:0;
   cam.position.set(px,py+EYE+(ground?Math.sin(bob)*.06:0)-land,pz);
   cam.rotation.set(pitch,yaw,cam.rotation.z+(roll-cam.rotation.z)*Math.min(1,dt*8));
-  cam.fov=80+fovK*15+Math.min(8,Math.hypot(dx,dz)*.6);
+  cam.fov=80+fovK*15+Math.min(8,Math.hypot(dx,dz)*.6);animHands(dt);
   h('score').textContent=score();h('sub').textContent=py.toFixed(1)+' m  ·  '+Z[zoneIdx(py)].name;
   const gd=py-flood;const g=h('goo');g.textContent=boss?W.flood.name+' HALTED — BOSS FIGHT':W.flood.name+' ▼ '+gd.toFixed(0)+'m';g.style.opacity=!boss&&gd<12?(Math.sin(t*12)>0?1:.4):.7;
 }
@@ -849,6 +936,7 @@ function viewSetup(P){
   pillar.position.y=Math.floor(py/2)*2-40;
   const zi=zoneIdx(py);bandMat.color.setHex(Z[zi].rim);bandMat.emissive.setHex(Z[zi].rim);
   scenUpdate(0,e,T);goo.position.y=flood;
+  cams.forEach(c=>{if(c.hands)c.hands.visible=c===P.cam&&started&&!P.down;});
   players.forEach(Q=>{const a=Q.avatar;a.visible=started&&players.length>1&&Q!==P&&!Q.down;if(a.visible){a.position.set(Q.px,Q.py,Q.pz);a.rotation.y=Q.yaw;}});
   cam.updateProjectionMatrix();
 }
@@ -866,7 +954,7 @@ function loop(now){const dt=Math.min(.033,(now-last)/1000);last=now;T+=dt;
   pollMenuPad(dt);
   if(playing())frame(dt);
   else if(!started&&players[0]){withP(players[0],()=>{yaw+=dt*.08;cam.rotation.set(pitch,yaw,0);});}
-  animate(dt,T);
+  animate(dt,T);renderSkinView(dt);
   if(!playing())for(const d of debris){d.v.y-=20*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.s.x*dt;}
   render();
   requestAnimationFrame(loop);}
@@ -875,5 +963,5 @@ function loop(now){const dt=Math.min(.033,(now-last)/1000);last=now;T+=dt;
 let startWorld='concrete';try{if(WORLDS[localStorage.ocWorld])startWorld=localStorage.ocWorld;}catch(e){}
 $('mute').onclick=e=>{e.stopPropagation();actx();setMute(!SND.muted);};setMute(SND.muted);
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.btn'))sfx('click');},true);
-selectWorld(startWorld);showMain();requestAnimationFrame(loop);
+initSkinView();setPreview();selectWorld(startWorld);showMain();requestAnimationFrame(loop);
 </script></body></html>
