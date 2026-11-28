@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Songbook · hammi.ca</title>
+<meta name="description" content="Write songs in your browser: lyrics with syllable counts and rhymes, plus scales, chords, progressions and the circle of fifths.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#dcdcd9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a1b" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/img/logo/hammi-icon.svg" type="image/svg+xml">
+<link rel="icon" href="/img/logo/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  try { const t = localStorage.getItem('hammi-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('hammi-accent') === 'blue') document.documentElement.classList.add('accent-blue'); } catch (e) {}
+</script>
+<link rel="stylesheet" href="sb.css">
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <div class="ruler"></div><div class="ruler v"></div>
+  <span class="cross" style="left:18px;top:18px"></span><span class="cross" style="right:18px;top:18px"></span><span class="cross" style="left:18px;bottom:18px"></span><span class="cross" style="right:18px;bottom:18px"></span>
+  <span class="coord" style="left:44px;top:22px">a1</span><span class="coord" style="right:44px;top:22px">a8</span><span class="coord" style="left:44px;bottom:22px">h1</span><span class="coord" style="right:44px;bottom:22px">h8 · sb-1 rev 1</span>
+</div>
+
+<div class="container">
+  <header class="top">
+    <a class="brand" href="/" title="hammi.ca">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="20" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><rect x="64" y="18" width="16" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="50" cy="50" r="9" fill="var(--orange)"/></svg>
+      <h1>song<i>.</i>book</h1>
+    </a>
+    <div class="spec"><span><b>sb-1</b> · lyrics and music theory</span><span>hammi.ca · test build</span></div>
+    <div class="tiers">
+      <div class="tier"><span class="led" id="set-led"></span><button class="k2 k" id="settings" aria-expanded="false" aria-controls="sheet"><span class="t">settings</span><span class="b">system</span></button></div>
+    </div>
+    <div class="sheet" id="sheet" hidden role="dialog" aria-label="Settings">
+      <h4><span>settings</span><b>system</b></h4>
+      <div class="set"><span>Mode<small>light or dark</small></span><div class="opts" data-set="theme"><div class="sk"><span class="led"></span><button class="k grey" data-v="light">light</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="dark">dark</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="auto">auto</button></div></div></div>
+      <div class="set"><span>Accent<small>key and light colour</small></span><div class="opts" data-set="accent"><div class="sk"><span class="led"></span><button class="k orange" data-v="orange">orng</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="blue" style="color:#7cc0ff">blue</button></div></div></div>
+      <div class="set"><span>Sound<small>volume of played notes</small></span><div class="opts" data-set="vol"><div class="sk"><span class="led"></span><button class="k black" data-v="0">off</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="1">low</button></div><div class="sk"><span class="led"></span><button class="k black" data-v="2">full</button></div></div></div>
+    </div>
+  </header>
+
+  <nav class="modes" aria-label="Sections">
+    <div class="mk"><span class="led" data-led="write"></span><a class="k black" href="#write" data-tab="write">Write<small>01</small></a></div>
+    <div class="mk"><span class="led" data-led="rhymes"></span><a class="k black" href="#rhymes" data-tab="rhymes">Rhymes<small>02</small></a></div>
+    <div class="mk"><span class="led" data-led="theory"></span><a class="k black" href="#theory" data-tab="theory">Theory<small>03</small></a></div>
+    <span class="sep"></span>
+    <div class="mk"><span class="led"></span><a class="k grey" href="/loopsprout/">Loopsprout<small>↗</small></a></div>
+  </nav>
+
+  <!-- ============================== WRITE ============================== -->
+  <section class="tab" id="tab-write" data-name="write">
+    <div class="wcols">
+      <aside class="songs">
+        <h2 class="legend"><span>songs</span><span class="ln"></span><span class="dim" id="song-count">01</span></h2>
+        <ul id="song-list"></ul>
+        <button class="k grey wide" id="song-new">New song</button>
+        <p class="fine">Songs are saved in this browser only. Use Export to keep a copy.</p>
+      </aside>
+
+      <div class="paper-col">
+        <div class="titlebar">
+          <input id="song-title" class="title-in" type="text" placeholder="Untitled song" maxlength="80" aria-label="Song title">
+          <span class="saved mono" id="saved"><span class="led on"></span>saved</span>
+        </div>
+        <div class="paper">
+          <div class="cols-h mono" aria-hidden="true"><span>syl</span><span>lyrics</span><span>rhy</span></div>
+          <div class="editor" id="editor">
+            <div class="gut l" id="gut-l" aria-hidden="true"></div>
+            <div class="ta-wrap">
+              <textarea id="ta" spellcheck="true" aria-label="Lyrics" placeholder="[Verse 1]&#10;Start writing here. The number on the left counts syllables,&#10;the letter on the right shows which lines rhyme.&#10;&#10;Click a word to see rhymes for it."></textarea>
+              <div class="mirror" id="mirror" aria-hidden="true"></div>
+            </div>
+            <div class="gut r" id="gut-r" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="under">
+          <span class="stats mono" id="stats">0 lines · 0 words</span>
+          <span class="acts">
+            <button class="k grey" id="act-copy">Copy</button>
+            <button class="k grey" id="act-export">Export .txt</button>
+            <button class="k grey" id="act-delete">Delete</button>
+          </span>
+        </div>
+      </div>
+
+      <aside class="tools">
+        <section class="display rpanel">
+          <div class="bar"><span class="lit">● rhymes</span><span id="rp-word">—</span><span class="r" id="rp-syl"></span></div>
+          <div class="in" id="rp-body"><p class="g-mute">Click a word in your lyrics, or put the cursor at the end of a line.</p></div>
+        </section>
+
+        <section>
+          <h3 class="legend"><span>structure</span><span class="ln"></span></h3>
+          <div class="chips" id="structs"></div>
+          <div class="tip" id="struct-tip"></div>
+        </section>
+
+        <section>
+          <h3 class="legend"><span>sections</span><span class="ln"></span><span class="dim">tap for a tip</span></h3>
+          <div class="chips" id="sections"></div>
+          <div class="tip" id="section-tip"></div>
+        </section>
+
+        <section>
+          <h3 class="legend"><span>prompt</span><span class="ln"></span></h3>
+          <div class="display prompt" id="prompt" aria-live="polite"></div>
+          <div class="row-k">
+            <button class="k orange" id="prompt-spin">New prompt</button>
+            <button class="k grey" id="prompt-add">Add to song</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================== RHYMES ============================== -->
+  <section class="tab" id="tab-rhymes" data-name="rhymes" hidden>
+    <form class="display search" id="rh-form" autocomplete="off">
+      <div class="bar"><span class="lit">● find</span><span>rhyme dictionary</span><span class="r" id="rh-count">44,000 words</span></div>
+      <div class="sin">
+        <input id="rh-in" type="text" placeholder="type a word" aria-label="Word to rhyme" maxlength="40" autocapitalize="off" spellcheck="false">
+        <button class="k orange" type="submit">Find</button>
+      </div>
+      <div class="sread mono" id="rh-read"></div>
+    </form>
+    <p class="hint">Click a word to copy it. Common words come first. Near rhymes share the vowel sounds but not every consonant, which is often what real songs use.</p>
+    <div class="rh-results" id="rh-results"></div>
+  </section>
+
+  <!-- ============================== THEORY ============================== -->
+  <section class="tab" id="tab-theory" data-name="theory" hidden>
+    <div class="keybar">
+      <h2 class="legend"><span>key</span><span class="ln"></span><span class="dim" id="key-name">C major</span></h2>
+      <div class="roots" id="roots"></div>
+      <div class="scales" id="scales"></div>
+    </div>
+
+    <div class="tgrid">
+      <section class="display circle-d">
+        <div class="bar"><span class="lit">● circle of fifths</span><span class="r">tap a key</span></div>
+        <div class="in"><svg id="circle" viewBox="0 0 400 400" role="img" aria-label="Circle of fifths"></svg>
+          <p class="g-mute small" id="circle-note"></p></div>
+      </section>
+
+      <section class="scale-s">
+        <div class="display scale-d">
+          <div class="bar"><span class="lit">● scale</span><span id="sc-name">C major</span><span class="r" id="sc-sig"></span></div>
+          <div class="in">
+            <div class="notes" id="sc-notes"></div>
+            <div class="degs mono" id="sc-degs"></div>
+            <p class="g-mute small" id="sc-desc"></p>
+          </div>
+        </div>
+        <div class="kb-wrap"><svg id="kb" class="kb" viewBox="0 0 588 120" role="img" aria-label="Piano keyboard"></svg></div>
+        <div class="row-k">
+          <button class="k orange" id="sc-play">Play scale</button>
+          <span class="mono dim small" id="kb-label">keyboard shows the scale · tap keys to play</span>
+        </div>
+        <div class="display fret-d"><div class="bar"><span class="lit">● guitar</span><span>standard tuning</span><span class="r" id="fret-label">scale</span></div>
+          <div class="in fret-in"><svg id="fret" class="fret" viewBox="0 0 640 150" role="img" aria-label="Guitar fretboard"></svg></div></div>
+      </section>
+    </div>
+
+    <section class="block">
+      <h2 class="legend"><span>chords in this key</span><span class="ln"></span>
+        <span class="opts mini" id="ck-size"><button class="k grey" data-v="3">triads</button><button class="k grey" data-v="4">7ths</button></span></h2>
+      <div class="ckeys" id="ckeys"></div>
+      <p class="fine" id="ck-note"></p>
+    </section>
+
+    <section class="block">
+      <h2 class="legend"><span>progressions</span><span class="ln"></span><span class="dim" id="prog-key">in C</span></h2>
+      <div class="tempo mono">
+        <label>tempo <input type="range" id="bpm" min="50" max="160" value="88"> <b id="bpm-v">88</b> bpm</label>
+        <label class="chk"><input type="checkbox" id="loop"> loop</label>
+      </div>
+      <ul class="progs" id="progs"></ul>
+    </section>
+
+    <section class="block">
+      <h2 class="legend"><span>build your own</span><span class="ln"></span><span class="dim">tap chords above, they land here</span></h2>
+      <div class="display mine"><div class="in"><div class="mine-row" id="mine"><span class="g-dim">empty · tap a chord in “chords in this key”</span></div></div></div>
+      <div class="row-k">
+        <button class="k orange" id="mine-play">Play</button>
+        <button class="k grey" id="mine-undo">Remove last</button>
+        <button class="k grey" id="mine-clear">Clear</button>
+        <button class="k grey" id="mine-song">Add to song</button>
+        <span class="mono dim small" id="mine-msg"></span>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="legend"><span>chord finder</span><span class="ln"></span><span class="dim" id="cf-name">C</span></h2>
+      <div class="roots" id="cf-roots"></div>
+      <div class="scales" id="cf-quals"></div>
+      <div class="cf-grid">
+        <div class="display"><div class="bar"><span class="lit">● chord</span><span id="cf-full">C major</span><span class="r" id="cf-int"></span></div>
+          <div class="in"><div class="notes" id="cf-notes"></div><p class="g-mute small" id="cf-desc"></p></div></div>
+        <div><div class="kb-wrap"><svg id="cf-kb" class="kb" viewBox="0 0 588 120" role="img" aria-label="Chord on piano"></svg></div>
+          <div class="row-k"><button class="k orange" id="cf-play">Play</button><button class="k grey" id="cf-arp">Arpeggio</button><button class="k grey" id="cf-add">Add to mine</button></div></div>
+      </div>
+    </section>
+
+    <section class="block two">
+      <div>
+        <h2 class="legend"><span>tap tempo</span><span class="ln"></span></h2>
+        <div class="tap-row"><button class="k black tapk" id="tap">Tap</button><div class="display tapd"><div class="in"><b id="tap-bpm">—</b><span class="mono g-mute">bpm</span></div></div></div>
+        <p class="fine">Tap along to a song or a beat in your head. Most pop sits between 90 and 130.</p>
+      </div>
+      <div>
+        <h2 class="legend"><span>make it a loop</span><span class="ln"></span></h2>
+        <p>Got chords you like? Open <a href="/loopsprout/">Loopsprout</a>, the hammi.ca music maker, and build a beat under them.</p>
+        <a class="k grey" href="/loopsprout/" style="height:38px;padding:0 16px">Open Loopsprout</a>
+      </div>
+    </section>
+  </section>
+
+  <footer class="footer">
+    <span>Songbook is a test build on <a href="/">hammi.ca</a>. Word sounds from the CMU Pronouncing Dictionary, word list from SCOWL.</span>
+    <span class="end">sb-1 · <span id="year">2026</span></span>
+  </footer>
+</div>
+
+<div class="toast mono" id="toast" role="status" hidden></div>
+
+<script src="theory.js"></script>
+<script src="sb.js"></script>
+</body>
+</html>
