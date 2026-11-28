@@ -1,0 +1,9 @@
+{
+  "name": "hammi-guestbook",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API for the hammi.ca guest book",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
