@@ -52,8 +52,8 @@ body {
 
 /* ---- full-screen wall ---- */
 html, body { height: 100%; overflow: hidden; }
-.desk { position: fixed; inset: 0; overflow: auto; display: grid; padding: 64px 16px 92px; }
-.wrap { position: relative; width: max-content; margin: auto; padding: 10px; background: var(--glass); border-radius: 4px; box-shadow: var(--disp-shadow); }
+.desk { position: fixed; inset: 0; overflow: auto; display: grid; padding: 58px 12px 82px; } /* app.js fits the wall to the room left by this padding */
+.wrap { position: relative; width: max-content; margin: auto; border-radius: 2px; box-shadow: 0 0 0 8px var(--glass), 0 0 0 9px rgba(0,0,0,.5), 0 1px 10px 8px rgba(0,0,0,.25); } /* the black frame is a shadow so it takes no room */
 #board {
   box-sizing: content-box;
   display: block;
@@ -66,7 +66,6 @@ html, body { height: 100%; overflow: hidden; }
 #cursor {
   position: absolute;
   pointer-events: none;
-  margin: 10px 0 0 10px; /* sits inside the display's padding */
   outline: 1px solid #000;
   box-shadow: 0 0 0 2px var(--orange);
 }
@@ -258,9 +257,8 @@ footer.note { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--r
 [hidden] { display: none !important; }
 
 @media (max-width: 700px) {
-  .desk { padding: 60px 8px 180px; }
-  .wrap { padding: 6px; }
-  #cursor { margin: 6px 0 0 6px; }
+  .desk { padding: 56px 8px 160px; }
+  .wrap { box-shadow: 0 0 0 5px var(--glass), 0 0 0 6px rgba(0,0,0,.5); }
   .palette { grid-template-columns: repeat(8, 30px); gap: 6px; }
   .swatch { width: 30px; height: 30px; }
   .hud .coords { display: none; }
