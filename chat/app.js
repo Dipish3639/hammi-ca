@@ -7,7 +7,7 @@
 const NOOKARA = 'https://nookara.cc';
 const NOOKARA_WS = 'wss://nookara.cc';
 const APP_ID = 'app_8df4644bb50d66f71773'; // the Nookara app this client signs in with (My Account > Apps on nookara.cc)
-const CLIENT = { name: 'Hammi Chat', version: '0.5.0' };
+const CLIENT = { name: 'Hammi Chat', version: '0.5.1' };
 const LS = { token: 'hammichat_token', user: 'hammichat_user', sessions: 'hammichat_sessions', last: 'hammichat_last', extra: 'hammichat_extra_instances' };
 
 // ───────────────────────── small helpers ─────────────────────────
@@ -974,7 +974,8 @@ const E2EE_ERR = { wrong_passcode: 'That PIN or password is wrong.', invalid_aut
 async function unlockWith(kind) {
   const val = id => ($(id)?.value || '').trim();
   try {
-    if (kind === 'pass') { if (!val('k-pass')) return; openKeys('Unlocking... (this takes a few seconds)'); await HC.unlockPasscode($('k-pass')?.value || val('k-pass')); }
+    // read the PIN before openKeys() redraws the window (the redraw empties the field)
+    if (kind === 'pass') { const pass = $('k-pass')?.value || ''; if (!pass.trim()) return; openKeys('Unlocking... (this takes a few seconds)'); await HC.unlockPasscode(pass); }
     else if (kind === 'rec') { const v = val('k-rec'); if (!v) return; openKeys('Unlocking...'); await HC.unlockRecovery(v); }
     else if (kind === 'setup') {
       const a = $('k-new').value, b2 = $('k-new2').value;
