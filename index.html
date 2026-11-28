@@ -470,7 +470,7 @@
       <section class="display"><div class="bar"><span class="lit">● now</span><span>hammi.ca</span></div>
         <div class="in"><div class="clk" id="clock" aria-hidden="true">00:00</div><p>Latest: <b>Hammi Chat</b>, a chat app for Ember servers.</p></div></section>
       <a class="display hide-s" href="https://display.hammi.ca/" aria-label="LED Wall"><div class="bar"><span class="lit">● on</span><span>led wall</span><span class="r">display.hammi.ca</span></div><div class="in" id="led" style="padding:12px"></div></a>
-      <a class="display hide-s" href="https://wall.hammi.ca/" aria-label="Pixel Wall"><div class="bar"><span class="lit">● live</span><span>pixel wall</span><span class="r">128 × 64</span></div><canvas id="wall" width="48" height="32"></canvas></a>
+      <a class="display hide-s" href="https://wall.hammi.ca/" aria-label="Pixel Wall"><div class="bar"><span class="lit">● live</span><span>pixel wall</span><span class="r">128 × 64</span></div><canvas id="wall" width="128" height="64"></canvas></a>
       <a class="display gbk" href="/guestbook/" aria-label="Guest book"><div class="bar"><span class="lit">● gb-1</span><span>guest book</span><span class="r" id="gb-no">sign it</span></div><div class="in"><p id="gb-msg">Leave your name and a short note.</p><p class="gbn" id="gb-who"></p></div></a>
       <section class="nside" id="house-edge"><h4 class="legend"><span>coming soon</span><span class="ln"></span></h4>
         <p><b style="font-weight:400">House Edge</b>: a small 3D casino for Windows. Walk up to a table and play blackjack, dice, slots or roulette, alone or online with other players. It uses play chips only, so no real money is involved, and you sign in with a Nookara account.</p>
@@ -545,26 +545,47 @@
     $('gb-msg').textContent = '\u201c' + e.message + '\u201d';
     $('gb-who').textContent = e.name + (e.from ? ' · ' + e.from : '');
   }).catch(() => {});
-  /* ---------- tiny Pixel Wall that paints itself ---------- */
-  const wx = $('wall').getContext('2d');
-  const PAL = ['#ff5a1f', '#ff8a5c', '#3c9eff', '#7cc0ff', '#e9e9e6', '#bdbdb9', '#6f6f6c', '#ffc23c', '#2fbf71'];
-  const HEART = ['01100110', '11111111', '11111111', '01111110', '00111100', '00011000'];
+  /* ---------- Pixel Wall: the real wall from wall.hammi.ca, kept up to date ---------- */
+  const WALL = 'https://wall.hammi.ca';
+  const wc = $('wall'), wx = wc.getContext('2d'), wallLit = wc.parentNode.querySelector('.lit');
+  let W = 0, H = 0, rgb = [], ver = 0, ep = '', live = false, busy = false, img = null;
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   function drawWallBase() {
-    wx.fillStyle = '#0b0b0c'; wx.fillRect(0, 0, 48, 32);
-    for (let i = 0; i < 110; i++) { wx.fillStyle = PAL[i % PAL.length]; wx.fillRect(Math.random() * 48 | 0, Math.random() * 32 | 0, 1, 1); }
-    const c = accent();
-    HEART.forEach((row, y) => [...row].forEach((v, x) => { if (v === '1') { wx.fillStyle = c; wx.fillRect(20 + x, 13 + y, 1, 1); } }));
+    if (live) return;
+    /* shown only until the real wall loads, or if it can't be reached */
+    wx.fillStyle = '#0b0b0c'; wx.fillRect(0, 0, wc.width, wc.height);
   }
-  drawWallBase();
-  let brush = { x: 6, y: 6, c: PAL[2] };
-  function paint() {
-    if (Math.random() < 0.08) brush = { x: Math.random() * 48 | 0, y: Math.random() * 32 | 0, c: PAL[Math.random() * PAL.length | 0] };
-    brush.x = (brush.x + (Math.random() * 3 | 0) - 1 + 48) % 48;
-    brush.y = (brush.y + (Math.random() * 3 | 0) - 1 + 32) % 32;
-    const inHeart = brush.x >= 20 && brush.x < 28 && brush.y >= 13 && brush.y < 19;
-    if (!inHeart) { wx.fillStyle = brush.c; wx.fillRect(brush.x, brush.y, 1, 1); }
+  function px(x, y, c) {
+    const p = rgb[c] || rgb[0], i = (y * W + x) * 4;
+    img.data[i] = p[0]; img.data[i + 1] = p[1]; img.data[i + 2] = p[2]; img.data[i + 3] = 255;
   }
-  if (!reduce) setInterval(() => { if (!document.hidden) paint(); }, 90);
+  async function loadWall() {
+    const c = await (await fetch(WALL + '/api/canvas', { cache: 'no-store' })).json();
+    W = c.w; H = c.h; rgb = c.palette.map(hex); ver = c.version; ep = c.epoch;
+    const bin = atob(c.data);
+    wc.width = W; wc.height = H; img = wx.createImageData(W, H);
+    for (let i = 0; i < W * H; i++) px(i % W, i / W | 0, bin.charCodeAt(i));
+    wx.putImageData(img, 0, 0);
+    live = true; wallLit.textContent = '\u25cf live';
+    wc.parentNode.querySelector('.r').textContent = W + ' \u00d7 ' + H;
+  }
+  async function pollWall() {
+    if (busy || document.hidden) return; busy = true;
+    try {
+      if (!live) await loadWall();
+      else {
+        const r = await (await fetch(WALL + '/api/changes?since=' + ver + '&epoch=' + encodeURIComponent(ep), { cache: 'no-store' })).json();
+        if (r.full) await loadWall();
+        else if (r.changes.length) { for (const [x, y, c] of r.changes) px(x, y, c); wx.putImageData(img, 0, 0); }
+        ver = r.version; ep = r.epoch;
+      }
+    } catch (e) { if (!live) wallLit.textContent = '\u25cb offline'; }
+    busy = false;
+  }
+  wallLit.textContent = '\u25cb loading';
+  drawWallBase(); pollWall();
+  setInterval(pollWall, 3000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pollWall(); });
 })();
 </script>
 </body>
