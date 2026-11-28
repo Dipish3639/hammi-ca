@@ -327,7 +327,6 @@
       <div class="sub">live</div>
       <div class="row"><span class="led on"></span><a class="k black" href="https://wall.hammi.ca/">Pixel Wall<small>↗</small></a></div>
       <div class="row"><span class="led on"></span><a class="k black" href="https://race.hammi.ca/">Hammi 24<small>↗</small></a></div>
-      <div class="row"><span class="led on"></span><a class="k black" href="https://display.hammi.ca/">LED Wall<small>↗</small></a></div>
       <div class="sub">play &amp; make</div>
       <div class="row"><span class="led"></span><a class="k grey" href="/orbit-climb/">Orbit Climb<small>↗</small></a></div>
       <div class="row"><span class="led"></span><a class="k grey" href="/loose-thread/">Loose Thread<small>↗</small></a></div>
@@ -469,7 +468,6 @@
     <aside class="now">
       <section class="display"><div class="bar"><span class="lit">● now</span><span>hammi.ca</span></div>
         <div class="in"><div class="clk" id="clock" aria-hidden="true">00:00</div><p>Latest: <b>Hammi Chat</b>, a chat app for Ember servers.</p></div></section>
-      <a class="display hide-s" href="https://display.hammi.ca/" aria-label="LED Wall"><div class="bar"><span class="lit">● on</span><span>led wall</span><span class="r">display.hammi.ca</span></div><div class="in" id="led" style="padding:12px"></div></a>
       <a class="display hide-s" href="https://wall.hammi.ca/" aria-label="Pixel Wall"><div class="bar"><span class="lit">● live</span><span>pixel wall</span><span class="r">128 × 64</span></div><canvas id="wall" width="128" height="64"></canvas></a>
       <a class="display gbk" href="/guestbook/" aria-label="Guest book"><div class="bar"><span class="lit">● gb-1</span><span>guest book</span><span class="r" id="gb-no">sign it</span></div><div class="in"><p id="gb-msg">Leave your name and a short note.</p><p class="gbn" id="gb-who"></p></div></a>
       <section class="nside" id="house-edge"><h4 class="legend"><span>coming soon</span><span class="ln"></span></h4>
@@ -480,12 +478,12 @@
         <div class="status-row"><span class="led on" aria-hidden="true"></span>GameShelf download: ready</div>
         <div class="status-row"><span class="led on slow" aria-hidden="true"></span>House Edge download: soon</div></div></section>
       <section class="nside" id="about"><h4 class="legend"><span>about</span><span class="ln"></span></h4>
-        <p>hammi.ca is where I put the things I build: a chat app, a shared pixel wall, a 24-hour AI race, an LED wall and a few small games.</p></section>
+        <p>hammi.ca is where I put the things I build: a chat app, a shared pixel wall, a 24-hour AI race and a few small games.</p></section>
     </aside>
   </div>
 
   <footer class="footer">
-    <nav><a href="#top">Home</a><a href="/chat/">Hammi Chat</a><a href="/guestbook/">Guest book</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="https://display.hammi.ca/">LED Wall</a><a href="#about">About</a></nav>
+    <nav><a href="#top">Home</a><a href="/chat/">Hammi Chat</a><a href="/guestbook/">Guest book</a><a href="https://wall.hammi.ca/">Pixel Wall</a><a href="https://race.hammi.ca/">Hammi 24</a><a href="#about">About</a></nav>
     <span>&copy; <span id="year">2026</span> hammi.ca</span>
     <span class="end">made by hand · hm-1</span>
   </footer>
@@ -524,19 +522,6 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) toggleSheet(false); });
   document.addEventListener('click', e => { if (!$('sheet').hidden && !e.target.closest('#sheet, #settings')) toggleSheet(false); });
   const accent = () => getComputedStyle(root).getPropertyValue('--orange').trim() || '#ff5a1f';
-
-  /* ---------- LED wall: text scrolling in dots ---------- */
-  const lc = document.createElement('canvas'); lc.width = 128; lc.height = 32; $('led').appendChild(lc);
-  const lx = lc.getContext('2d'), TEXT = 'HI FROM HAMMI.CA', src = document.createElement('canvas'); src.width = 128; src.height = 32;
-  const sx = src.getContext('2d'); let off = 40;
-  function led() {
-    sx.fillStyle = '#000'; sx.fillRect(0, 0, 128, 32); sx.fillStyle = '#fff'; sx.font = 'bold 24px "IBM Plex Mono", monospace'; sx.fillText(TEXT, off, 25);
-    const d = sx.getImageData(0, 0, 128, 32).data, c = accent();
-    lx.fillStyle = '#0b0b0c'; lx.fillRect(0, 0, 128, 32);
-    for (let y = 0; y < 32; y += 2) for (let x = 0; x < 128; x += 2) { lx.fillStyle = d[(y * 128 + x) * 4] > 80 ? c : '#1b1b1c'; lx.fillRect(x, y, 1.4, 1.4); }
-    off -= 2; if (off < -sx.measureText(TEXT).width) off = 128;
-  }
-  led(); if (!reduce) setInterval(() => { if (!document.hidden) led(); }, 60);
 
   /* ---------- newest guest book note ---------- */
   fetch('https://guestbook.hammi.ca/api/entries?limit=1').then(r => r.json()).then(d => {
