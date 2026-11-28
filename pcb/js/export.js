@@ -135,12 +135,14 @@
       '  *-Edge_Cuts.GKO                board outline',
       '  *-PTH.DRL / *-NPTH.DRL         plated and non-plated holes',
       '  *-BOM.csv / *-CPL.csv          parts list and placement (for assembly)',
+      pr.firmware ? '  *-firmware/*.ino               Arduino sketch for the Nano (open in the Arduino IDE)' : null,
       '  *-project.json                 open this in hammi.ca/pcb to edit the board again',
       '',
       'Upload this zip as-is to most PCB makers (JLCPCB, PCBWay, OSH Park, Aisler).',
       'Always look at their Gerber viewer before you pay.'
     ].filter(x => x !== null).join('\r\n');
     files.push({ name: base + '-README.txt', data: readme + '\r\n' });
+    if (pr.firmware) files.push({ name: base + '-firmware/' + base + '-firmware.ino', data: pr.firmware });
     files.push({ name: base + '-project.json', data: JSON.stringify(pr, null, 1) });
     return { base, files };
   }

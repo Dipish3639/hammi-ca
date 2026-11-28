@@ -127,6 +127,32 @@
         body: { kind: 'tact' }
       };
     },
+    nano() {
+      // Arduino Nano: 2 x 15 pins, rows 15.24 mm apart, USB end at the bottom (by D12/D13)
+      const pads = [];
+      for (let i = 0; i < 15; i++) pads.push(tht(i + 1, i + 1, -7.62, -17.78 + i * 2.54, 1.7, 1.0, i === 0 ? 'rect' : 'circle'));
+      for (let i = 0; i < 15; i++) pads.push(tht(16 + i, 16 + i, 7.62, 17.78 - i * 2.54, 1.7, 1.0));
+      return { pads, silk: [...box(-9, -21.6, 9, 21.6), ...box(-3.9, 18.6, 3.9, 22.6)], body: { kind: 'nano' } };
+    },
+    oled() {
+      // 0.96 inch I2C OLED module, 27.3 x 27.8 mm, 4-pin header on top: GND VCC SCL SDA
+      const pads = [0, 1, 2, 3].map(i => tht(i + 1, i + 1, -3.81 + i * 2.54, -11.6, 1.7, 1.0, i === 0 ? 'rect' : 'circle'));
+      return { pads, silk: [...box(-13.65, -13.9, 13.65, 13.9), ...box(-12.6, -7.6, 12.6, 9.2)], body: { kind: 'oled' } };
+    },
+    encoder() {
+      // EC11-style rotary encoder with push switch: A C B on one side, switch on the other, two mounting lugs
+      return {
+        pads: [tht(1, 1, -2.5, 7.5, 1.8, 1.0, 'rect'), tht(2, 2, 0, 7.5, 1.8, 1.0), tht(3, 3, 2.5, 7.5, 1.8, 1.0), tht(4, 4, -2.5, -7, 1.8, 1.0), tht(5, 5, 2.5, -7, 1.8, 1.0)],
+        holes: [{ x: -5.7, y: 0, d: 2.4 }, { x: 5.7, y: 0, d: 2.4 }],
+        silk: [...box(-6.2, -6.2, 6.2, 6.2), C(0, 0, 3)], body: { kind: 'encoder' }
+      };
+    },
+    buzzer() {
+      return { pads: [tht(1, 1, -3.8, 0, 2.0, 1.0, 'rect'), tht(2, 2, 3.8, 0, 2.0, 1.0)], silk: [C(0, 0, 6.15), L(-5.6, -3.4, -5.6, -2.0), L(-6.3, -2.7, -4.9, -2.7)], body: { kind: 'buzzer' } };
+    },
+    ldr() {
+      return { pads: [tht(1, 1, -2.54, 0, 1.6, .8), tht(2, 2, 2.54, 0, 1.6, .8)], silk: [C(0, 0, 2.75)], body: { kind: 'ldr' } };
+    },
     hole(d) { return { pads: [], holes: [{ x: 0, y: 0, d }], silk: [C(0, 0, d / 2 + .9)], body: null }; }
   };
 
@@ -188,6 +214,19 @@
         : [L(0, 0, 0, -1.2), L(-1, -1.2, 1, -1.2), ['t', 0, -2.1, name, 'c', .9]];
       return { pins: [{ n: 1, name, x: 0, y: 0 }], prims, box: gnd ? [-1.2, 0, 1.2, 2.2] : [-1.4, -2.7, 1.4, 0] };
     },
+    module: (title, names, right) => {
+      // pins down the left (and optionally right) side of a labelled box
+      const L2 = names.filter((_, i) => !(right && right.includes(i))), R2 = names.filter((_, i) => right && right.includes(i));
+      const rows = Math.max(L2.length, R2.length), top = -(rows - 1), pins = [], prims = [];
+      let li = 0, ri = 0;
+      names.forEach((nm, i) => {
+        const isR = right && right.includes(i), y = top + 2 * (isR ? ri++ : li++), x = isR ? 7 : -7;
+        pins.push({ n: i + 1, name: nm, x, y });
+        prims.push(L(x, y, isR ? 5 : -5, y), ['t', isR ? 4.6 : -4.6, y, nm, isR ? 'r' : 'l', .8]);
+      });
+      prims.unshift(['r', -5, top - 2.6, 10, (rows - 1) * 2 + 4.2], ['t', 0, top - 1.6, title, 'c', .8]);
+      return { pins, prims, box: [-7, top - 2.6, 7, top - 2.6 + (rows - 1) * 2 + 4.2] };
+    },
     label: (name) => {
       const w = Math.max(2, String(name).length * .62 + .9);
       return { pins: [{ n: 1, name, x: 0, y: 0 }], prims: [['p', [[0, 0], [.6, -.6], [w, -.6], [w, .6], [.6, .6]], 0], ['t', .8, 0, name, 'l', .85]], box: [0, -.7, w, .7] };
@@ -233,6 +272,18 @@
     SW: { name: 'Push button', group: 'Connect', prefix: 'SW', value: 'tact', sym: () => SYM.button(), fps: { t6: ['Tactile 6x6 mm', () => FP.tact()] }, fp: 't6' },
     MH: { name: 'Mounting hole', group: 'Board', prefix: 'H', value: 'M3', sym: () => SYM.hole(),
       fps: { m3: ['M3, 3.2 mm hole', () => FP.hole(3.2)], m2: ['M2, 2.2 mm hole', () => FP.hole(2.2)] }, fp: 'm3' },
+    NANO: { name: 'Arduino Nano', group: 'Blocks', prefix: 'U', value: 'Arduino Nano', block: 'brain',
+      sym: () => SYM.ic(30, ['D1/TX', 'D0/RX', 'RST', 'GND', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12', 'D13', '3V3', 'AREF', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', '5V', 'RST', 'GND', 'VIN']),
+      fps: { nano: ['Nano module, 2 x 15 pins', () => FP.nano()] }, fp: 'nano' },
+    OLED: { name: 'Screen (OLED)', group: 'Blocks', prefix: 'DS', value: 'SSD1306 128x64', block: 'screen',
+      sym: () => SYM.module('OLED 0.96"', ['GND', 'VCC', 'SCL', 'SDA']), fps: { m: ['0.96" I2C OLED module', () => FP.oled()] }, fp: 'm' },
+    ENC: { name: 'Dial (encoder)', group: 'Blocks', prefix: 'EN', value: 'EC11', block: 'dial',
+      sym: () => SYM.module('ENCODER', ['A', 'C', 'B', 'SW1', 'SW2'], [3, 4]), fps: { ec11: ['EC11 encoder with push', () => FP.encoder()] }, fp: 'ec11' },
+    KNOB: { name: 'Knob (pot)', group: 'Blocks', prefix: 'RV', value: '10k', block: 'knob', sym: () => SYM.pot(), fps: { t: ['Trimmer 3-pin 2.54 mm', () => FP.trimmer()] }, fp: 't' },
+    BUZ: { name: 'Buzzer', group: 'Blocks', prefix: 'BZ', value: 'passive 12mm', block: 'buzzer',
+      sym: () => SYM.module('BUZZER', ['+', '-']), fps: { b12: ['12 mm buzzer, 7.6 mm pitch', () => FP.buzzer()] }, fp: 'b12' },
+    LDR: { name: 'Light sensor', group: 'Blocks', prefix: 'LDR', value: 'GL5528', block: 'light',
+      sym: () => SYM.module('LDR', ['1', '2']), fps: { l5: ['5 mm LDR', () => FP.ldr()] }, fp: 'l5' },
     PWR: { name: 'Power label', group: 'Power', prefix: '#PWR', value: 'VCC', power: true, values: ['VCC', '+5V', '+3V3', '+12V', 'GND'],
       sym: (p) => SYM.power(p.value || 'VCC'), fps: null },
     NL: { name: 'Net label', group: 'Power', prefix: '#NL', value: 'SIG', power: true, label: true, values: ['SIG', 'SDA', 'SCL', 'TX', 'RX', 'CLK'],

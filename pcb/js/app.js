@@ -7,6 +7,7 @@
 
   /* ---------- state ---------- */
   let pr = null, mode = 'sch';
+  const vk = () => mode === 'sch' ? 'sch' : 'brd', isB = () => mode === 'brd' || mode === 'bld';
   const views = { sch: { ox: 0, oy: 0, s: 16 }, brd: { ox: 0, oy: 0, s: 10 } };
   const st = { sel: null, selWire: null, selTrace: null, hiNet: null, hoverPin: null, wireFrom: null, mouse: null, drc: null, drcHot: null, layers: { top: true, bot: true, silk: true, rats: true, real: false }, rats: null, silk: null, realImg: null, nets: null, info: null };
   const undo = [], redo = [];
@@ -37,7 +38,7 @@
     $('sp-size').textContent = pr.board.w + ' × ' + pr.board.h + ' mm';
     $('sp-parts').textContent = pr.parts.filter(p => !DEFS[p.type].power).length;
     $('sp-nets').textContent = [...st.nets.nets.values()].filter(v => v.length >= 2).length;
-    syncBoardForm(); inspector(); leds(); hint(); render();
+    syncBoardForm(); inspector(); leds(); hint(); blockCounts(); $('fw-step').hidden = !pr.firmware; render();
     if (mode === '3d' && P.view3d) P.view3d.update(pr);
   }
   let saveT = 0;
@@ -69,7 +70,7 @@
     }
   }
   function fitView(which) {
-    which = which || mode; const v = views[which]; if (!v) return;
+    which = which || vk(); const v = views[which]; if (!v) return;
     let bb;
     if (which === 'sch') bb = D.schBounds(pr);
     else {
@@ -84,11 +85,11 @@
     render();
   }
   function zoomAt(f, sx, sy) {
-    const v = views[mode]; if (!v) return;
+    const v = views[vk()]; if (!v) return;
     const ns = Math.max(1.5, Math.min(200, v.s * f)); f = ns / v.s;
     v.ox = sx - (sx - v.ox) * f; v.oy = sy - (sy - v.oy) * f; v.s = ns; st.realImg = null; render();
   }
-  const toWorld = (sx, sy) => { const v = views[mode]; return { x: (sx - v.ox) / v.s, y: (sy - v.oy) / v.s }; };
+  const toWorld = (sx, sy) => { const v = views[vk()]; return { x: (sx - v.ox) / v.s, y: (sy - v.oy) / v.s }; };
 
   /* ---------- hit testing ---------- */
   function pinAt(w) {
@@ -139,7 +140,7 @@
     ptrs.set(e.pointerId, { x: sx, y: sy });
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; drag = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; return; }
     const w = toWorld(sx, sy);
-    if (e.button === 1 || e.button === 2 || spaceDown) { drag = { kind: 'pan', sx, sy, ox: views[mode].ox, oy: views[mode].oy }; return; }
+    if (e.button === 1 || e.button === 2 || spaceDown) { drag = { kind: 'pan', sx, sy, ox: views[vk()].ox, oy: views[vk()].oy }; return; }
     if (mode === 'sch') {
       const pin = pinAt(w);
       if (pin) {
@@ -164,7 +165,7 @@
       if (ti != null) { st.sel = null; st.selWire = null; st.selTrace = ti; st.hiNet = pr.traces[ti].net; inspector(); render(); return; }
     }
     select(null); st.selWire = null; st.selTrace = null; inspector();
-    drag = { kind: 'pan', sx, sy, ox: views[mode].ox, oy: views[mode].oy };
+    drag = { kind: 'pan', sx, sy, ox: views[vk()].ox, oy: views[vk()].oy };
   });
   cv.addEventListener('pointermove', e => {
     const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
@@ -172,9 +173,9 @@
     const w = toWorld(sx, sy);
     if (drag && drag.kind === 'pinch' && ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-      const v = views[mode]; v.ox += cx - drag.cx; v.oy += cy - drag.cy; zoomAt(d / drag.d, cx, cy); drag.d = d; drag.cx = cx; drag.cy = cy; return;
+      const v = views[vk()]; v.ox += cx - drag.cx; v.oy += cy - drag.cy; zoomAt(d / drag.d, cx, cy); drag.d = d; drag.cx = cx; drag.cy = cy; return;
     }
-    if (drag && drag.kind === 'pan') { const v = views[mode]; v.ox = drag.ox + sx - drag.sx; v.oy = drag.oy + sy - drag.sy; render(); return; }
+    if (drag && drag.kind === 'pan') { const v = views[vk()]; v.ox = drag.ox + sx - drag.sx; v.oy = drag.oy + sy - drag.sy; render(); return; }
     if (drag && drag.kind === 'part') {
       const p = drag.part, dx = w.x - drag.w0.x, dy = w.y - drag.w0.y;
       if (mode === 'sch') { const nx = Math.round(drag.x0 + dx), ny = Math.round(drag.y0 + dy); if (nx !== p.sx || ny !== p.sy) { p.sx = nx; p.sy = ny; drag.moved = true; render(); } }
@@ -202,7 +203,7 @@
     ptrs.delete(e.pointerId);
     if (drag && drag.kind === 'part' && drag.moved) {
       undo.push(drag.snap); redo.length = 0;
-      if (mode === 'brd') ripUp(drag.part);
+      if (isB()) ripUp(drag.part);
       changed();
     }
     if (ptrs.size < 2 && drag && drag.kind === 'pinch') drag = null;
@@ -230,9 +231,10 @@
     if (k === ' ') { spaceDown = true; e.preventDefault(); }
     else if (k === 'r') rotateSel();
     else if (k === 'delete' || k === 'backspace') { e.preventDefault(); deleteSel(); }
+    else if (k === 'escape' && !$('code').hidden) $('code').hidden = true;
     else if (k === 'escape') { st.wireFrom = null; select(null); st.selWire = st.selTrace = null; inspector(); hint(); render(); }
     else if (k === 'f') fitView();
-    else if (k === '1') setMode('sch'); else if (k === '2') setMode('brd'); else if (k === '3') setMode('3d');
+    else if (k === '1') setMode('bld'); else if (k === '2') setMode('sch'); else if (k === '3') setMode('brd'); else if (k === '4') setMode('3d');
   });
   document.addEventListener('keyup', e => { if (e.key === ' ') spaceDown = false; });
 
@@ -258,8 +260,9 @@
     if (mode === 'sch') {
       if (pin) { const net = st.nets.byKey.get(pin.p + ':' + pin.n); h.innerHTML = '<b>' + esc(pin.part.ref) + '</b> pin ' + pin.n + (pin.pin.name && pin.pin.name !== String(pin.n) ? ' ' + esc(pin.pin.name) : '') + ' · ' + (net ? 'net <b>' + esc(net) + '</b>' : 'not connected') + (st.wireFrom ? ' · click to finish the wire' : ' · click to start a wire'); return; }
       h.innerHTML = st.wireFrom ? 'Wiring: click another pin to connect · <b>Shift</b>+click to keep going · <b>Esc</b> to stop' : 'Click a pin, then another pin to wire them · drag parts · <b>R</b> rotate · <b>Del</b> delete · scroll to zoom, drag empty space to pan';
-    } else if (mode === 'brd') {
+    } else if (isB()) {
       if (pad) { h.innerHTML = '<b>' + esc(pad.ref) + '</b> pad ' + esc(pad.n) + ' · ' + (pad.net ? 'net <b>' + esc(pad.net) + '</b>' : 'no net') + ' · ' + (pad.drill ? 'through-hole, ' + pad.drill + ' mm drill' : 'SMD, top'); return; }
+      if (mode === 'bld' && !pr.firmware) { h.innerHTML = 'Click a block on the left, drag it where you want it on the board, then press <b>Connect &amp; make it work</b>'; return; }
       const open = st.rats ? st.rats.open : 0;
       h.innerHTML = (open ? '<b>' + open + '</b> connection' + (open > 1 ? 's' : '') + ' still to route · ' : (pr.traces.length ? 'All connections routed · ' : '')) + 'Drag parts (<b>Shift</b> for fine steps) · <b>R</b> rotate · click a trace and <b>Del</b> to remove it';
     } else h.innerHTML = 'Drag to turn the board · scroll to zoom · right-drag to move';
@@ -385,6 +388,7 @@
       ol.appendChild(li);
     }
     if (status != null) $('log-s').textContent = status;
+    ol.scrollTop = 0;
   }
   function leds() {
     const fp = pr.parts.filter(p => M.footprintOf(p));
@@ -410,7 +414,7 @@
     commit(() => { pr.traces = []; pr.vias = []; r = P.place.autoplace(pr, { resize: $('c-resize').checked }); });
     if (!r.ok) { log([{ cls: 'err', t: r.msg }], 'place failed'); return false; }
     log([{ cls: 'ok', t: 'Placed ' + pr.parts.filter(p => M.footprintOf(p)).length + ' parts on a ' + pr.board.w + ' × ' + pr.board.h + ' mm board.' }], 'placed');
-    if (mode === 'brd') fitView('brd');
+    if (isB()) fitView('brd');
     return true;
   }
   async function doRoute() {
@@ -441,6 +445,12 @@
     return r;
   }
   async function generate() {
+    let conn = null;
+    if (mode === 'bld') {
+      if (!pr.parts.some(p => p.block && p.type !== 'NANO')) { log([{ cls: 'warn', t: 'Add some blocks first: a screen, a dial, buttons, LEDs…' }], '—'); return; }
+      commit(() => { conn = P.build.connect(pr); });
+      fitView('sch');
+    }
     if (!hasParts()) return;
     if (!doPlace()) return;
     setMode('brd'); fitView('brd'); await tick();
@@ -452,6 +462,11 @@
     else items.push({ cls: 'ok', t: 'Routed ' + r.connections + ' connections: ' + r.traces.length + ' traces, ' + r.vias.length + ' vias.' });
     if (!d.errors && !d.warnings) items.push({ cls: 'ok', t: 'Design-rule check passed. Ready to export.' });
     for (const x of d.list.slice(0, 200)) items.push({ cls: x.sev === 'error' ? 'err' : 'warn', t: x.msg, d: x });
+    if (conn) {
+      items.unshift({ cls: 'ok', t: 'Wired ' + conn.map.length + ' blocks to the Arduino Nano. Firmware written (step 5).' });
+      for (const m of conn.msgs) items.splice(1, 0, { cls: /No room/.test(m) ? 'warn' : 'dim', t: m });
+      items.push({ cls: 'dim', t: 'Pins: ' + conn.map.map(m => m.part.ref + ' ' + (m.role === 'screen' ? 'A4/A5 (I2C)' : m.role === 'dial' ? 'D2 D3 D4' : (typeof m.pin === 'number' ? 'D' : '') + m.pin)).join(' · ') });
+    }
     log(items, d.errors ? d.errors + ' error' + (d.errors > 1 ? 's' : '') : 'ready');
   }
   function download(name, data, type) {
@@ -470,11 +485,56 @@
   }
   function saveFile() { download((pr.name || 'board').replace(/[^a-z0-9_-]+/gi, '-') + '.pcb.json', JSON.stringify(pr, null, 1), 'application/json'); }
 
+  /* ---------- build blocks ---------- */
+  function buildBlocks() {
+    const host = $('blocks'); host.innerHTML = '';
+    for (const [t, name, sub] of P.build.BLOCKS) {
+      const b = document.createElement('button'); b.className = 'k ' + (t === 'NANO' ? 'black' : 'grey') + ' blk'; b.dataset.type = t;
+      b.innerHTML = '<span><b>' + esc(name) + '</b><small>' + esc(sub) + '</small></span><span class="cnt"></span>';
+      b.addEventListener('click', () => addBlock(t));
+      host.appendChild(b);
+    }
+  }
+  function blockCounts() {
+    document.querySelectorAll('.blk').forEach(b => { const n = pr.parts.filter(p => p.block && p.type === b.dataset.type).length; b.querySelector('.cnt').textContent = n ? '×' + n : ''; });
+  }
+  function addBlock(type) {
+    if (type === 'NANO' && pr.parts.some(p => p.type === 'NANO')) { log([{ cls: 'dim', t: 'There is already a Nano on the board. Drag it where you want it.' }]); return; }
+    let p;
+    commit(() => {
+      p = M.addPart(pr, type, { block: true, locked: true });
+      // first free spot on the board, scanning from the top left
+      const fits = (x, y) => { p.bx = x; p.by = y; const b = M.partBox(p, .8); if (b[0] < 1 || b[1] < 1 || b[2] > pr.board.w - 1 || b[3] > pr.board.h - 1) return false; return !pr.parts.some(q => q !== p && (() => { const o = M.partBox(q, .8); return o && b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]; })()); };
+      let ok = false;
+      for (let tries = 0; tries < 6 && !ok; tries++) {
+        outer: for (let y = 2.54; y < pr.board.h; y += 1.27) for (let x = 2.54; x < pr.board.w; x += 1.27) if (fits(x, y)) { ok = true; break outer; }
+        if (!ok) { pr.board.w += 15; pr.board.h += 10; }
+      }
+      p.sx = 40 + (pr.parts.length % 5) * 14; p.sy = 30 + Math.floor(pr.parts.length / 5) * 10;
+    });
+    select(p.id);
+    if (mode !== 'bld') setMode('bld');
+    fitView('brd');
+  }
+  function showCode() {
+    if (!pr.firmware) return;
+    $('code-t').textContent = (pr.name || 'board') + ' firmware · Arduino Nano';
+    $('code-p').textContent = pr.firmware; $('code').hidden = false;
+  }
+  const fwName = () => (pr.name || 'board').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') + '-firmware';
+  $('b-fw').onclick = () => download(fwName() + '.ino', pr.firmware || '', 'text/plain');
+  $('b-fwv').onclick = showCode;
+  $('code-x').onclick = () => { $('code').hidden = true; };
+  $('code-copy').onclick = async () => { try { await navigator.clipboard.writeText(pr.firmware || ''); $('code-copy').textContent = 'Copied'; setTimeout(() => $('code-copy').textContent = 'Copy', 1500); } catch (e) {} };
+
   /* ---------- modes ---------- */
   function setMode(m) {
     mode = m;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.view === m));
-    $('layers').hidden = m !== 'brd';
+    $('layers').hidden = !isB();
+    $('blocks-wrap').hidden = m !== 'bld'; $('lib-wrap').hidden = m === 'bld';
+    $('gen-t').textContent = m === 'bld' ? 'Connect & make it work' : 'Generate PCB';
+    $('gen-s').textContent = m === 'bld' ? 'wire · place · route · code' : 'place · route · check';
     $('v3d').hidden = m !== '3d'; cv.hidden = m === '3d';
     document.querySelector('.ovl.br').hidden = m === '3d';
     if (m === '3d') {
@@ -506,8 +566,8 @@
   $('b-new').onclick = () => { if (pr.parts.length && !confirm('Start a new empty board? (Undo can bring this one back.)')) return; const old = snapshot(); load(M.newProject()); undo.push(old); };
   const menu = $('m-ex');
   for (const [k, ex] of Object.entries(P.examples)) {
-    const b = document.createElement('button'); b.innerHTML = esc(ex.title) + '<small>' + (k === 'blinker' ? 'NE555, 7 nets, through-hole' : 'transistor switch, mounting holes') + '</small>';
-    b.onclick = () => { menu.hidden = true; const old = pr.parts.length ? snapshot() : null; load(ex.make()); if (old) undo.push(old); setMode('sch'); log([{ cls: 'dim', t: 'Loaded the ' + ex.title + ' example. Press Generate PCB to turn it into a board.' }], '—'); };
+    const b = document.createElement('button'); b.innerHTML = esc(ex.title) + '<small>' + (ex.sub || '') + '</small>';
+    b.onclick = () => { menu.hidden = true; const old = pr.parts.length ? snapshot() : null; load(ex.make()); if (old) undo.push(old); setMode(ex.build ? 'bld' : 'sch'); fitView('brd'); log([{ cls: 'dim', t: 'Loaded the ' + ex.title + ' example. Press ' + (ex.build ? 'Connect & make it work' : 'Generate PCB') + ' to turn it into a board.' }], '—'); };
     menu.appendChild(b);
   }
   $('b-ex').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
@@ -518,13 +578,13 @@
     buildLib();
   };
   new ResizeObserver(resize).observe($('screen'));
-  bindForms(); buildLib();
+  bindForms(); buildLib(); buildBlocks();
 
   let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
   resize();
   if (saved && saved.parts && saved.parts.length) { load(saved); log([{ cls: 'dim', t: 'Picked up where you left off. Examples menu has ready-made circuits.' }], '—'); }
-  else { load(P.examples.blinker.make()); log([{ cls: 'dim', t: 'This is the 555 blinker example. Press Generate PCB to see it become a board, or New to start your own.' }], '—'); }
-  let m0 = 'sch'; try { m0 = localStorage.getItem('hammi-pcb-mode') || 'sch'; } catch (e) {}
+  else { load(P.examples.gadget.make()); log([{ cls: 'dim', t: 'A screen, a dial, two buttons, two LEDs and a buzzer are on the board. Press Connect & make it work, or drag them around first.' }], '—'); }
+  let m0 = saved && saved.parts && saved.parts.length ? 'sch' : 'bld'; try { m0 = localStorage.getItem('hammi-pcb-mode') || m0; } catch (e) {}
   setMode(m0 === '3d' ? 'brd' : m0);
   requestAnimationFrame(() => { fitView('sch'); fitView('brd'); });
   P.app = { get project() { return pr; }, views, generate, doDrc, setMode, fitView };

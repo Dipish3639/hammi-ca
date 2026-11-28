@@ -59,6 +59,7 @@
         }
         c += 0.04 * (Math.abs(x - W / 2) + Math.abs(y - H / 2));
         if (isConn(p)) { const bx = boxAt(p, x, y, rot); c += 0.9 * Math.min(bx[0], bx[1], W - bx[2], H - bx[3]); }
+        if (p.type === 'NANO') { const [ux, uy] = G.rotPt(0, 22.6, rot); c += 1.5 * Math.min(Math.abs(x + ux), Math.abs(y + uy), Math.abs(W - x - ux), Math.abs(H - y - uy)); }
         return c;
       }
       function best(p, self) {
@@ -98,7 +99,7 @@
     }
 
     let W = b.w, H = b.h, placed = null;
-    if (opt.resize) {
+    if (opt.resize && !fixed.length) {
       // start from a board big enough to hold everything loosely
       let area = 0; for (const p of movers) { const bb = geo.get(p.id)[0].bb; area += (bb[2] - bb[0] + gap + 1.5) * (bb[3] - bb[1] + gap + 1.5); }
       const side = Math.sqrt(area * 2.2) + 2 * edgeM + (holes.length ? 10 : 0);

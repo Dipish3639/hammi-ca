@@ -15,9 +15,17 @@
     return pr;
   }
 
+  function gadget() {
+    const pr = M.newProject(); pr.name = 'hammi-gadget'; Object.assign(pr.board, { w: 100, h: 66, r: 2, label: 'hammi.ca gadget' });
+    let i = 0;
+    const blk = (t, x, y, o) => { i++; return M.addPart(pr, t, Object.assign({ block: true, locked: true, bx: x, by: y, sx: (i % 4) * 16, sy: Math.floor(i / 4) * 12 }, o || {})); };
+    blk('OLED', 20, 20); blk('ENC', 82, 18); blk('LED', 48, 8); blk('LED', 58, 8); blk('SW', 70, 52); blk('SW', 86, 52); blk('BUZ', 12, 52);
+    return pr;
+  }
   const EX = {
+    gadget: { title: 'Gadget: screen, dial, buttons', sub: 'build mode, Arduino Nano + code', build: true, make: gadget },
     blinker: {
-      title: '555 LED blinker',
+      title: '555 LED blinker', sub: 'NE555, 7 nets, through-hole',
       make: () => build('555-blinker', [
         ['U1', 'IC', 'NE555', 0, 0],
         ['J1', 'J', 'header', -26, 0, 0, { n: 2 }],
@@ -41,7 +49,7 @@
       ], { label: 'hammi.ca 555 blinker' })
     },
     usbled: {
-      title: 'Button + LED + transistor',
+      title: 'Button + LED + transistor', sub: 'transistor switch, mounting holes',
       make: () => build('button-led', [
         ['J1', 'JT', 'terminal', -20, 0, 0, { n: 2 }],
         ['SW1', 'SW', 'tact', -8, -6],

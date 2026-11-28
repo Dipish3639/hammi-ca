@@ -153,6 +153,50 @@
         }
         case 'trimmer': { const bd = box(9.5, 10, 4.8, mat('#2f6fd0')); bd.position.set(0, 5, -1); g.add(bd); const sc = cyl(1.1, 1.2, gold, 16); sc.rotation.x = Math.PI / 2; sc.position.set(3.4, 8.4, -3.5); g.add(sc); break; }
         case 'crystal': { const bd = box(10.5, 3.6, 4.4, metal); bd.position.y = 2.2; g.add(bd); for (const s of [-1, 1]) { const e = cyl(2.2, 3.6, metal, 20); e.position.set(s * 5.25, 2.2, 0); g.add(e); } break; }
+        case 'nano': {
+          const H = 8.5, pcb = box(18, 1.6, 43.2, mat('#1f4f9a', { roughness: .5 })); pcb.position.y = H + .8; g.add(pcb);
+          for (const s of [-1, 1]) { const strip = box(2.5, 2.5, 38.1, blk); strip.position.set(s * 7.62, 1.25, 0); g.add(strip); }
+          for (const p of pads) { const pin = box(.64, H + 2.5, .64, gold); pin.position.set(p.x, (H + 2.5) / 2, p.y); g.add(pin); }
+          const mcu = box(7, 1, 7, mat('#151515')); mcu.rotation.y = Math.PI / 4; mcu.position.set(0, H + 2.1, -2); g.add(mcu);
+          const usb = box(7.6, 3.9, 9, metal); usb.position.set(0, H + 3.5, 18.6); g.add(usb);
+          const btn = box(3, 1.2, 3, mat('#d8d8d4')); btn.position.set(0, H + 2.2, 8); g.add(btn);
+          const ld = box(1, .6, 1.6, mat('#ff6a2b', { emissive: '#ff4a14', emissiveIntensity: .6 })); ld.position.set(3.5, H + 1.9, 10); g.add(ld);
+          break;
+        }
+        case 'oled': {
+          const H = 11, pcb = box(27.3, 1.2, 27.8, mat('#1f4f9a', { roughness: .5 })); pcb.position.y = H; g.add(pcb);
+          const strip = box(10.2, 2.5, 2.5, blk); strip.position.set(0, 1.25, -11.6); g.add(strip);
+          for (const p of pads) { const pin = box(.64, H + 2, .64, gold); pin.position.set(p.x, (H + 2) / 2, p.y); g.add(pin); }
+          const glass = box(26, .9, 15.5, mat('#0a0a0c', { roughness: .1, metalness: .3 })); glass.position.set(0, H + 1.05, 1); g.add(glass);
+          const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 128;
+          const cx = cvs.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, 256, 128); cx.fillStyle = cx.strokeStyle = '#bfe8ff';
+          cx.font = '500 15px "IBM Plex Mono", monospace'; cx.textBaseline = 'top'; cx.fillText(String(pr.name || 'hammi').slice(0, 21), 2, 2); cx.fillRect(0, 21, 256, 2);
+          const rows = [['LEVEL', 50], ['KNOB1', 72], ['LIGHT', 35]];
+          rows.forEach(([t, v], i) => { const y = 30 + i * 20; cx.fillText(t, 2, y); cx.fillText(String(v), 82, y); cx.lineWidth = 2; cx.strokeRect(128, y + 1, 126, 12); cx.fillRect(131, y + 4, 120 * v / 100, 6); });
+          for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(10 + i * 24, 114, 7, 0, Math.PI * 2); i < 2 ? cx.fill() : cx.stroke(); }
+          const scr = new THREE.Mesh(new THREE.PlaneGeometry(21.7, 10.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cvs) }));
+          scr.rotation.x = -Math.PI / 2; scr.position.set(0, H + 1.52, 1); g.add(scr);
+          break;
+        }
+        case 'encoder': {
+          const bd = box(12, 6.5, 12, mat('#8b8d90', { metalness: .7, roughness: .4 })); bd.position.y = 3.25; g.add(bd);
+          const bush = cyl(3.5, 5, metal, 24); bush.position.y = 9; g.add(bush);
+          const knob = cyl(7, 9, mat('#1c1c1c', { roughness: .45 }), 40); knob.position.y = 15.5; g.add(knob);
+          const cap = cyl(6.4, .4, mat('#2a2a2a', { metalness: .6, roughness: .3 }), 40); cap.position.y = 20.2; g.add(cap);
+          const tick = box(.8, .2, 4, mat('#ff5a1f')); tick.position.set(0, 20.45, -3.6); g.add(tick);
+          break;
+        }
+        case 'buzzer': {
+          const bd = cyl(6, 9.5, mat('#141414', { roughness: .55 }), 36); bd.position.y = 4.75; g.add(bd);
+          const hole = cyl(1.2, .1, mat('#000'), 16); hole.position.y = 9.55; g.add(hole);
+          break;
+        }
+        case 'ldr': {
+          const d = cyl(2.6, 1.8, mat('#c6703e', { roughness: .4 }), 24); d.position.y = 4.5; g.add(d);
+          const top = cyl(2.2, .05, mat('#e9e2d0', { roughness: .3 }), 24); top.position.y = 5.43; g.add(top);
+          for (const p of pads) lead(p.x, 0, p.x * .4, 0, 3.6, .22);
+          break;
+        }
         case 'tact': {
           const bd = box(6, 3.4, 6, blk); bd.position.y = 1.7; g.add(bd); const pl = box(6.1, .2, 6.1, metal); pl.position.y = 3.5; g.add(pl);
           const btn = cyl(1.75, 1.6, mat('#2a2a2a'), 24); btn.position.y = 4.3; g.add(btn);
